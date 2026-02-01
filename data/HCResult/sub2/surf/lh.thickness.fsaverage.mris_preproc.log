@@ -1,0 +1,94 @@
+Sat Dec  7 23:00:55 CST 2024
+setenv SUBJECTS_DIR /home/HCResult
+cd /home/HCResult/sub2/surf
+/usr/local/freesurfer/7.4.1/bin/mris_preproc --s sub2 --hemi lh --meas thickness --target fsaverage --out lh.thickness.fsaverage.mgh
+
+Linux LAPTOP-N5G88QJH 4.4.0-19041-Microsoft #4355-Microsoft Thu Apr 12 17:37:00 PST 2024 x86_64 x86_64 x86_64 GNU/Linux
+mris_preproc 7.4.1
+freesurfer-linux-ubuntu20_x86_64-7.4.1-20230614-7eb8460
+tmpdir is ./tmp.mris_preproc.17477
+Src lh sphere.reg
+Trg lh sphere.reg
+
+
+
+
+---------------------------------------------------
+#@# 1/1 sub2 Sat Dec  7 23:00:55 CST 2024 --------------
+-rw-rw-r-- 1 root root 753935 Dec  7 22:10 /home/HCResult/sub2/surf/lh.thickness
+-----------------------
+mri_surf2surf --srcsubject sub2 --srchemi lh --srcsurfreg sphere.reg --trgsubject fsaverage --trghemi lh --trgsurfreg sphere.reg --tval ./tmp.mris_preproc.17477/sub2.1.mgh --sval /home/HCResult/sub2/surf/lh.thickness --sfmt curv --noreshape --cortex
+Source registration surface changed to sphere.reg
+Target registration surface changed to sphere.reg
+
+7.4.1
+
+setenv SUBJECTS_DIR /home/HCResult
+cd /home/HCResult/sub2/surf
+mri_surf2surf --srcsubject sub2 --srchemi lh --srcsurfreg sphere.reg --trgsubject fsaverage --trghemi lh --trgsurfreg sphere.reg --tval ./tmp.mris_preproc.17477/sub2.1.mgh --sval /home/HCResult/sub2/surf/lh.thickness --sfmt curv --noreshape --cortex 
+
+sysname  Linux
+hostname LAPTOP-N5G88QJH
+machine  x86_64
+user     root
+srcsubject = sub2
+srcval     = /home/HCResult/sub2/surf/lh.thickness
+srctype    = curv
+trgsubject = fsaverage
+trgval     = ./tmp.mris_preproc.17477/sub2.1.mgh
+trgtype    = 
+srcsurfreg = sphere.reg
+trgsurfreg = sphere.reg
+srchemi    = lh
+trghemi    = lh
+frame      = 0
+fwhm-in    = 0
+fwhm-out   = 0
+label-src  = lh.cortex.label
+label-trg  = lh.cortex.label
+OKToRevFaceOrder  = 1
+UseDualHemi = 0
+Reading source surface reg /home/HCResult/sub2/surf/lh.sphere.reg
+Loading source data
+Reading curvature file /home/HCResult/sub2/surf/lh.thickness
+Reading source subject label mask lh.cortex.label
+masking the input
+Reading target surface reg /home/HCResult/fsaverage/surf/lh.sphere.reg
+Done
+Using surf2surf_nnfr()
+Mapping Source Volume onto Source Subject Surface
+surf2surf_nnfr: building source hash (res=16).
+Surf2Surf: Forward Loop (163842)
+
+surf2surf_nnfr: building target hash (res=16).
+Surf2Surf: Reverse Loop (188480)
+Reverse Loop had 49490 hits
+Surf2Surf: Dividing by number of hits (163842)
+INFO: nSrcLost = 0
+nTrg121 = 121511, nTrgMulti = 42331, MnTrgMultiHits = 2.16912
+nSrc121 = 168870, nSrcLost =     0, nSrcMulti = 19610, MnSrcMultiHits = 2.26731
+Reading target space mask label lh.cortex.label
+masking the input
+Saving target data
+NOT Copying ctab from source
+Saving to ./tmp.mris_preproc.17477/sub2.1.mgh
+
+
+
+-----------------------
+mri_concat ./tmp.mris_preproc.17477/sub2.1.mgh --o lh.thickness.fsaverage.mgh
+ninputs = 1
+Checking inputs
+nframestot = 1
+Allocing output
+Done allocing
+nframes = 1
+Writing to lh.thickness.fsaverage.mgh
+
+
+
+Cleaning up
+-----------------------
+rm -r ./tmp.mris_preproc.17477
+Sat Dec  7 23:00:59 CST 2024
+mris_preproc done

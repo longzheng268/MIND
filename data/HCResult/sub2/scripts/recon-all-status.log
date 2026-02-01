@@ -1,0 +1,221 @@
+status file for recon-all
+Sat Dec  7 18:08:16 CST 2024
+#@# MotionCor Sat Dec  7 18:08:18 CST 2024
+#@# Talairach Sat Dec  7 18:08:24 CST 2024
+#@# Talairach Failure Detection Sat Dec  7 18:11:12 CST 2024
+#@# Nu Intensity Correction Sat Dec  7 18:11:12 CST 2024
+#@# Intensity Normalization Sat Dec  7 18:13:56 CST 2024
+#@# Skull Stripping Sat Dec  7 18:15:02 CST 2024
+#@# EM Registration Sat Dec  7 18:21:14 CST 2024
+#@# CA Normalize Sat Dec  7 18:28:03 CST 2024
+#@# CA Reg Sat Dec  7 18:28:41 CST 2024
+#@# SubCort Seg Sat Dec  7 19:41:38 CST 2024
+#@# CC Seg Sat Dec  7 20:17:09 CST 2024
+#@# Merge ASeg Sat Dec  7 20:17:40 CST 2024
+#@# Intensity Normalization2 Sat Dec  7 20:17:40 CST 2024
+#@# Mask BFS Sat Dec  7 20:19:15 CST 2024
+#@# WM Segmentation Sat Dec  7 20:19:16 CST 2024
+#@# Fill Sat Dec  7 20:21:10 CST 2024
+#@# Tessellate lh Sat Dec  7 20:21:49 CST 2024
+#@# Tessellate rh Sat Dec  7 20:21:52 CST 2024
+#@# Smooth1 lh Sat Dec  7 20:21:56 CST 2024
+#@# Smooth1 rh Sat Dec  7 20:21:59 CST 2024
+#@# Inflation1 lh Sat Dec  7 20:22:02 CST 2024
+#@# Inflation1 rh Sat Dec  7 20:22:18 CST 2024
+#@# QSphere lh Sat Dec  7 20:22:34 CST 2024
+#@# QSphere rh Sat Dec  7 20:24:14 CST 2024
+#@# Fix Topology lh Sat Dec  7 20:25:59 CST 2024
+#@# Fix Topology rh Sat Dec  7 20:30:34 CST 2024
+#@# Smooth2 lh Sat Dec  7 20:46:44 CST 2024
+#@# Smooth2 rh Sat Dec  7 20:46:47 CST 2024
+#@# Inflation2 lh Sat Dec  7 20:46:50 CST 2024
+#@# Inflation2 rh Sat Dec  7 20:47:11 CST 2024
+#@# Curv .H and .K lh Sat Dec  7 20:47:30 CST 2024
+#@# Curv .H and .K rh Sat Dec  7 20:48:22 CST 2024
+#@# Sphere lh Sat Dec  7 20:49:12 CST 2024
+#@# Sphere rh Sat Dec  7 21:05:39 CST 2024
+#@# Surf Reg lh Sat Dec  7 21:22:29 CST 2024
+#@# Surf Reg rh Sat Dec  7 21:35:01 CST 2024
+#@# Jacobian white lh Sat Dec  7 21:48:45 CST 2024
+#@# Jacobian white rh Sat Dec  7 21:48:46 CST 2024
+#@# AvgCurv lh Sat Dec  7 21:48:48 CST 2024
+#@# AvgCurv rh Sat Dec  7 21:48:49 CST 2024
+#@# Cortical Parc lh Sat Dec  7 21:48:50 CST 2024
+#@# Cortical Parc rh Sat Dec  7 21:49:00 CST 2024
+#@# white curv lh Sat Dec  7 22:09:37 CST 2024
+#@# white area lh Sat Dec  7 22:09:40 CST 2024
+#@# pial curv lh Sat Dec  7 22:09:41 CST 2024
+#@# pial area lh Sat Dec  7 22:09:44 CST 2024
+#@# thickness lh Sat Dec  7 22:09:45 CST 2024
+#@# area and vertex vol lh Sat Dec  7 22:10:23 CST 2024
+#@# white curv rh Sat Dec  7 22:10:25 CST 2024
+#@# white area rh Sat Dec  7 22:10:28 CST 2024
+#@# pial curv rh Sat Dec  7 22:10:29 CST 2024
+#@# pial area rh Sat Dec  7 22:10:31 CST 2024
+#@# thickness rh Sat Dec  7 22:10:32 CST 2024
+#@# area and vertex vol rh Sat Dec  7 22:11:06 CST 2024
+#@# Curvature Stats lh Sat Dec  7 22:11:08 CST 2024
+#@# Curvature Stats rh Sat Dec  7 22:11:11 CST 2024
+#@# Cortical ribbon mask Sat Dec  7 22:11:14 CST 2024
+#@# Cortical Parc 2 lh Sat Dec  7 22:28:10 CST 2024
+#@# Cortical Parc 2 rh Sat Dec  7 22:28:27 CST 2024
+#@# Cortical Parc 3 lh Sat Dec  7 22:28:43 CST 2024
+#@# Cortical Parc 3 rh Sat Dec  7 22:28:55 CST 2024
+#@# WM/GM Contrast lh Sat Dec  7 22:29:06 CST 2024
+#@# WM/GM Contrast rh Sat Dec  7 22:29:10 CST 2024
+#@# Relabel Hypointensities Sat Dec  7 22:29:14 CST 2024
+#@# APas-to-ASeg Sat Dec  7 22:29:29 CST 2024
+#@# AParc-to-ASeg aparc Sat Dec  7 22:29:46 CST 2024
+#@# AParc-to-ASeg aparc.a2009s Sat Dec  7 22:34:33 CST 2024
+#@# AParc-to-ASeg aparc.DKTatlas Sat Dec  7 22:39:21 CST 2024
+#@# WMParc Sat Dec  7 22:43:54 CST 2024
+#@# Parcellation Stats lh Sat Dec  7 22:49:48 CST 2024
+#@# Parcellation Stats rh Sat Dec  7 22:50:18 CST 2024
+#@# Parcellation Stats 2 lh Sat Dec  7 22:50:46 CST 2024
+#@# Parcellation Stats 2 rh Sat Dec  7 22:51:02 CST 2024
+#@# Parcellation Stats 3 lh Sat Dec  7 22:51:17 CST 2024
+#@# Parcellation Stats 3 rh Sat Dec  7 22:51:32 CST 2024
+#@# ASeg Stats Sat Dec  7 22:51:46 CST 2024
+#@# BA_exvivo Labels lh Sat Dec  7 22:54:12 CST 2024
+#@# BA_exvivo Labels rh Sat Dec  7 22:57:37 CST 2024
+#@# Qdec Cache preproc lh thickness fsaverage Sat Dec  7 23:00:54 CST 2024
+#@# Qdec Cache preproc lh area fsaverage Sat Dec  7 23:00:59 CST 2024
+#@# Qdec Cache preproc lh area.pial fsaverage Sat Dec  7 23:01:06 CST 2024
+#@# Qdec Cache preproc lh volume fsaverage Sat Dec  7 23:01:12 CST 2024
+#@# Qdec Cache preproc lh curv fsaverage Sat Dec  7 23:01:18 CST 2024
+#@# Qdec Cache preproc lh sulc fsaverage Sat Dec  7 23:01:23 CST 2024
+#@# Qdec Cache preproc lh white.K fsaverage Sat Dec  7 23:01:28 CST 2024
+#@# Qdec Cache preproc lh white.H fsaverage Sat Dec  7 23:01:33 CST 2024
+#@# Qdec Cache preproc lh jacobian_white fsaverage Sat Dec  7 23:01:38 CST 2024
+#@# Qdec Cache preproc lh w-g.pct.mgh fsaverage Sat Dec  7 23:01:42 CST 2024
+#@# Qdec Cache preproc rh thickness fsaverage Sat Dec  7 23:01:47 CST 2024
+#@# Qdec Cache preproc rh area fsaverage Sat Dec  7 23:01:52 CST 2024
+#@# Qdec Cache preproc rh area.pial fsaverage Sat Dec  7 23:01:58 CST 2024
+#@# Qdec Cache preproc rh volume fsaverage Sat Dec  7 23:02:04 CST 2024
+#@# Qdec Cache preproc rh curv fsaverage Sat Dec  7 23:02:10 CST 2024
+#@# Qdec Cache preproc rh sulc fsaverage Sat Dec  7 23:02:15 CST 2024
+#@# Qdec Cache preproc rh white.K fsaverage Sat Dec  7 23:02:19 CST 2024
+#@# Qdec Cache preproc rh white.H fsaverage Sat Dec  7 23:02:24 CST 2024
+#@# Qdec Cache preproc rh jacobian_white fsaverage Sat Dec  7 23:02:28 CST 2024
+#@# Qdec Cache preproc rh w-g.pct.mgh fsaverage Sat Dec  7 23:02:33 CST 2024
+#@# Qdec Cache surf2surf lh thickness fwhm0 fsaverage Sat Dec  7 23:02:37 CST 2024
+#@# Qdec Cache surf2surf lh thickness fwhm5 fsaverage Sat Dec  7 23:02:38 CST 2024
+#@# Qdec Cache surf2surf lh thickness fwhm10 fsaverage Sat Dec  7 23:02:40 CST 2024
+#@# Qdec Cache surf2surf lh thickness fwhm15 fsaverage Sat Dec  7 23:02:42 CST 2024
+#@# Qdec Cache surf2surf lh thickness fwhm20 fsaverage Sat Dec  7 23:02:44 CST 2024
+#@# Qdec Cache surf2surf lh thickness fwhm25 fsaverage Sat Dec  7 23:02:46 CST 2024
+#@# Qdec Cache surf2surf lh area fwhm0 fsaverage Sat Dec  7 23:02:48 CST 2024
+#@# Qdec Cache surf2surf lh area fwhm5 fsaverage Sat Dec  7 23:02:49 CST 2024
+#@# Qdec Cache surf2surf lh area fwhm10 fsaverage Sat Dec  7 23:02:51 CST 2024
+#@# Qdec Cache surf2surf lh area fwhm15 fsaverage Sat Dec  7 23:02:53 CST 2024
+#@# Qdec Cache surf2surf lh area fwhm20 fsaverage Sat Dec  7 23:02:55 CST 2024
+#@# Qdec Cache surf2surf lh area fwhm25 fsaverage Sat Dec  7 23:02:57 CST 2024
+#@# Qdec Cache surf2surf lh area.pial fwhm0 fsaverage Sat Dec  7 23:03:00 CST 2024
+#@# Qdec Cache surf2surf lh area.pial fwhm5 fsaverage Sat Dec  7 23:03:00 CST 2024
+#@# Qdec Cache surf2surf lh area.pial fwhm10 fsaverage Sat Dec  7 23:03:02 CST 2024
+#@# Qdec Cache surf2surf lh area.pial fwhm15 fsaverage Sat Dec  7 23:03:04 CST 2024
+#@# Qdec Cache surf2surf lh area.pial fwhm20 fsaverage Sat Dec  7 23:03:06 CST 2024
+#@# Qdec Cache surf2surf lh area.pial fwhm25 fsaverage Sat Dec  7 23:03:08 CST 2024
+#@# Qdec Cache surf2surf lh volume fwhm0 fsaverage Sat Dec  7 23:03:11 CST 2024
+#@# Qdec Cache surf2surf lh volume fwhm5 fsaverage Sat Dec  7 23:03:12 CST 2024
+#@# Qdec Cache surf2surf lh volume fwhm10 fsaverage Sat Dec  7 23:03:13 CST 2024
+#@# Qdec Cache surf2surf lh volume fwhm15 fsaverage Sat Dec  7 23:03:15 CST 2024
+#@# Qdec Cache surf2surf lh volume fwhm20 fsaverage Sat Dec  7 23:03:17 CST 2024
+#@# Qdec Cache surf2surf lh volume fwhm25 fsaverage Sat Dec  7 23:03:19 CST 2024
+#@# Qdec Cache surf2surf lh curv fwhm0 fsaverage Sat Dec  7 23:03:22 CST 2024
+#@# Qdec Cache surf2surf lh curv fwhm5 fsaverage Sat Dec  7 23:03:23 CST 2024
+#@# Qdec Cache surf2surf lh curv fwhm10 fsaverage Sat Dec  7 23:03:25 CST 2024
+#@# Qdec Cache surf2surf lh curv fwhm15 fsaverage Sat Dec  7 23:03:26 CST 2024
+#@# Qdec Cache surf2surf lh curv fwhm20 fsaverage Sat Dec  7 23:03:28 CST 2024
+#@# Qdec Cache surf2surf lh curv fwhm25 fsaverage Sat Dec  7 23:03:31 CST 2024
+#@# Qdec Cache surf2surf lh sulc fwhm0 fsaverage Sat Dec  7 23:03:33 CST 2024
+#@# Qdec Cache surf2surf lh sulc fwhm5 fsaverage Sat Dec  7 23:03:34 CST 2024
+#@# Qdec Cache surf2surf lh sulc fwhm10 fsaverage Sat Dec  7 23:03:36 CST 2024
+#@# Qdec Cache surf2surf lh sulc fwhm15 fsaverage Sat Dec  7 23:03:38 CST 2024
+#@# Qdec Cache surf2surf lh sulc fwhm20 fsaverage Sat Dec  7 23:03:40 CST 2024
+#@# Qdec Cache surf2surf lh sulc fwhm25 fsaverage Sat Dec  7 23:03:42 CST 2024
+#@# Qdec Cache surf2surf lh white.K fwhm0 fsaverage Sat Dec  7 23:03:44 CST 2024
+#@# Qdec Cache surf2surf lh white.K fwhm5 fsaverage Sat Dec  7 23:03:45 CST 2024
+#@# Qdec Cache surf2surf lh white.K fwhm10 fsaverage Sat Dec  7 23:03:47 CST 2024
+#@# Qdec Cache surf2surf lh white.K fwhm15 fsaverage Sat Dec  7 23:03:49 CST 2024
+#@# Qdec Cache surf2surf lh white.K fwhm20 fsaverage Sat Dec  7 23:03:51 CST 2024
+#@# Qdec Cache surf2surf lh white.K fwhm25 fsaverage Sat Dec  7 23:03:53 CST 2024
+#@# Qdec Cache surf2surf lh white.H fwhm0 fsaverage Sat Dec  7 23:03:55 CST 2024
+#@# Qdec Cache surf2surf lh white.H fwhm5 fsaverage Sat Dec  7 23:03:56 CST 2024
+#@# Qdec Cache surf2surf lh white.H fwhm10 fsaverage Sat Dec  7 23:03:58 CST 2024
+#@# Qdec Cache surf2surf lh white.H fwhm15 fsaverage Sat Dec  7 23:04:00 CST 2024
+#@# Qdec Cache surf2surf lh white.H fwhm20 fsaverage Sat Dec  7 23:04:02 CST 2024
+#@# Qdec Cache surf2surf lh white.H fwhm25 fsaverage Sat Dec  7 23:04:04 CST 2024
+#@# Qdec Cache surf2surf lh jacobian_white fwhm0 fsaverage Sat Dec  7 23:04:07 CST 2024
+#@# Qdec Cache surf2surf lh jacobian_white fwhm5 fsaverage Sat Dec  7 23:04:07 CST 2024
+#@# Qdec Cache surf2surf lh jacobian_white fwhm10 fsaverage Sat Dec  7 23:04:09 CST 2024
+#@# Qdec Cache surf2surf lh jacobian_white fwhm15 fsaverage Sat Dec  7 23:04:11 CST 2024
+#@# Qdec Cache surf2surf lh jacobian_white fwhm20 fsaverage Sat Dec  7 23:04:13 CST 2024
+#@# Qdec Cache surf2surf lh jacobian_white fwhm25 fsaverage Sat Dec  7 23:04:15 CST 2024
+#@# Qdec Cache surf2surf lh w-g.pct.mgh fwhm0 fsaverage Sat Dec  7 23:04:18 CST 2024
+#@# Qdec Cache surf2surf lh w-g.pct.mgh fwhm5 fsaverage Sat Dec  7 23:04:19 CST 2024
+#@# Qdec Cache surf2surf lh w-g.pct.mgh fwhm10 fsaverage Sat Dec  7 23:04:21 CST 2024
+#@# Qdec Cache surf2surf lh w-g.pct.mgh fwhm15 fsaverage Sat Dec  7 23:04:22 CST 2024
+#@# Qdec Cache surf2surf lh w-g.pct.mgh fwhm20 fsaverage Sat Dec  7 23:04:24 CST 2024
+#@# Qdec Cache surf2surf lh w-g.pct.mgh fwhm25 fsaverage Sat Dec  7 23:04:27 CST 2024
+#@# Qdec Cache surf2surf rh thickness fwhm0 fsaverage Sat Dec  7 23:04:29 CST 2024
+#@# Qdec Cache surf2surf rh thickness fwhm5 fsaverage Sat Dec  7 23:04:30 CST 2024
+#@# Qdec Cache surf2surf rh thickness fwhm10 fsaverage Sat Dec  7 23:04:32 CST 2024
+#@# Qdec Cache surf2surf rh thickness fwhm15 fsaverage Sat Dec  7 23:04:34 CST 2024
+#@# Qdec Cache surf2surf rh thickness fwhm20 fsaverage Sat Dec  7 23:04:36 CST 2024
+#@# Qdec Cache surf2surf rh thickness fwhm25 fsaverage Sat Dec  7 23:04:38 CST 2024
+#@# Qdec Cache surf2surf rh area fwhm0 fsaverage Sat Dec  7 23:04:40 CST 2024
+#@# Qdec Cache surf2surf rh area fwhm5 fsaverage Sat Dec  7 23:04:41 CST 2024
+#@# Qdec Cache surf2surf rh area fwhm10 fsaverage Sat Dec  7 23:04:43 CST 2024
+#@# Qdec Cache surf2surf rh area fwhm15 fsaverage Sat Dec  7 23:04:45 CST 2024
+#@# Qdec Cache surf2surf rh area fwhm20 fsaverage Sat Dec  7 23:04:47 CST 2024
+#@# Qdec Cache surf2surf rh area fwhm25 fsaverage Sat Dec  7 23:04:49 CST 2024
+#@# Qdec Cache surf2surf rh area.pial fwhm0 fsaverage Sat Dec  7 23:04:51 CST 2024
+#@# Qdec Cache surf2surf rh area.pial fwhm5 fsaverage Sat Dec  7 23:04:52 CST 2024
+#@# Qdec Cache surf2surf rh area.pial fwhm10 fsaverage Sat Dec  7 23:04:54 CST 2024
+#@# Qdec Cache surf2surf rh area.pial fwhm15 fsaverage Sat Dec  7 23:04:56 CST 2024
+#@# Qdec Cache surf2surf rh area.pial fwhm20 fsaverage Sat Dec  7 23:04:58 CST 2024
+#@# Qdec Cache surf2surf rh area.pial fwhm25 fsaverage Sat Dec  7 23:05:00 CST 2024
+#@# Qdec Cache surf2surf rh volume fwhm0 fsaverage Sat Dec  7 23:05:03 CST 2024
+#@# Qdec Cache surf2surf rh volume fwhm5 fsaverage Sat Dec  7 23:05:03 CST 2024
+#@# Qdec Cache surf2surf rh volume fwhm10 fsaverage Sat Dec  7 23:05:05 CST 2024
+#@# Qdec Cache surf2surf rh volume fwhm15 fsaverage Sat Dec  7 23:05:07 CST 2024
+#@# Qdec Cache surf2surf rh volume fwhm20 fsaverage Sat Dec  7 23:05:09 CST 2024
+#@# Qdec Cache surf2surf rh volume fwhm25 fsaverage Sat Dec  7 23:05:11 CST 2024
+#@# Qdec Cache surf2surf rh curv fwhm0 fsaverage Sat Dec  7 23:05:14 CST 2024
+#@# Qdec Cache surf2surf rh curv fwhm5 fsaverage Sat Dec  7 23:05:15 CST 2024
+#@# Qdec Cache surf2surf rh curv fwhm10 fsaverage Sat Dec  7 23:05:17 CST 2024
+#@# Qdec Cache surf2surf rh curv fwhm15 fsaverage Sat Dec  7 23:05:18 CST 2024
+#@# Qdec Cache surf2surf rh curv fwhm20 fsaverage Sat Dec  7 23:05:20 CST 2024
+#@# Qdec Cache surf2surf rh curv fwhm25 fsaverage Sat Dec  7 23:05:23 CST 2024
+#@# Qdec Cache surf2surf rh sulc fwhm0 fsaverage Sat Dec  7 23:05:25 CST 2024
+#@# Qdec Cache surf2surf rh sulc fwhm5 fsaverage Sat Dec  7 23:05:26 CST 2024
+#@# Qdec Cache surf2surf rh sulc fwhm10 fsaverage Sat Dec  7 23:05:28 CST 2024
+#@# Qdec Cache surf2surf rh sulc fwhm15 fsaverage Sat Dec  7 23:05:30 CST 2024
+#@# Qdec Cache surf2surf rh sulc fwhm20 fsaverage Sat Dec  7 23:05:32 CST 2024
+#@# Qdec Cache surf2surf rh sulc fwhm25 fsaverage Sat Dec  7 23:05:34 CST 2024
+#@# Qdec Cache surf2surf rh white.K fwhm0 fsaverage Sat Dec  7 23:05:36 CST 2024
+#@# Qdec Cache surf2surf rh white.K fwhm5 fsaverage Sat Dec  7 23:05:37 CST 2024
+#@# Qdec Cache surf2surf rh white.K fwhm10 fsaverage Sat Dec  7 23:05:39 CST 2024
+#@# Qdec Cache surf2surf rh white.K fwhm15 fsaverage Sat Dec  7 23:05:41 CST 2024
+#@# Qdec Cache surf2surf rh white.K fwhm20 fsaverage Sat Dec  7 23:05:43 CST 2024
+#@# Qdec Cache surf2surf rh white.K fwhm25 fsaverage Sat Dec  7 23:05:45 CST 2024
+#@# Qdec Cache surf2surf rh white.H fwhm0 fsaverage Sat Dec  7 23:05:48 CST 2024
+#@# Qdec Cache surf2surf rh white.H fwhm5 fsaverage Sat Dec  7 23:05:49 CST 2024
+#@# Qdec Cache surf2surf rh white.H fwhm10 fsaverage Sat Dec  7 23:05:50 CST 2024
+#@# Qdec Cache surf2surf rh white.H fwhm15 fsaverage Sat Dec  7 23:05:52 CST 2024
+#@# Qdec Cache surf2surf rh white.H fwhm20 fsaverage Sat Dec  7 23:05:54 CST 2024
+#@# Qdec Cache surf2surf rh white.H fwhm25 fsaverage Sat Dec  7 23:05:56 CST 2024
+#@# Qdec Cache surf2surf rh jacobian_white fwhm0 fsaverage Sat Dec  7 23:05:59 CST 2024
+#@# Qdec Cache surf2surf rh jacobian_white fwhm5 fsaverage Sat Dec  7 23:06:00 CST 2024
+#@# Qdec Cache surf2surf rh jacobian_white fwhm10 fsaverage Sat Dec  7 23:06:02 CST 2024
+#@# Qdec Cache surf2surf rh jacobian_white fwhm15 fsaverage Sat Dec  7 23:06:03 CST 2024
+#@# Qdec Cache surf2surf rh jacobian_white fwhm20 fsaverage Sat Dec  7 23:06:05 CST 2024
+#@# Qdec Cache surf2surf rh jacobian_white fwhm25 fsaverage Sat Dec  7 23:06:08 CST 2024
+#@# Qdec Cache surf2surf rh w-g.pct.mgh fwhm0 fsaverage Sat Dec  7 23:06:10 CST 2024
+#@# Qdec Cache surf2surf rh w-g.pct.mgh fwhm5 fsaverage Sat Dec  7 23:06:11 CST 2024
+#@# Qdec Cache surf2surf rh w-g.pct.mgh fwhm10 fsaverage Sat Dec  7 23:06:13 CST 2024
+#@# Qdec Cache surf2surf rh w-g.pct.mgh fwhm15 fsaverage Sat Dec  7 23:06:15 CST 2024
+#@# Qdec Cache surf2surf rh w-g.pct.mgh fwhm20 fsaverage Sat Dec  7 23:06:17 CST 2024
+#@# Qdec Cache surf2surf rh w-g.pct.mgh fwhm25 fsaverage Sat Dec  7 23:06:19 CST 2024
+recon-all -s sub2 finished without error at Sat Dec  7 23:06:22 CST 2024

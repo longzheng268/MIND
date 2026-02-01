@@ -1,0 +1,1 @@
+mri_convert /home/PAResult/sub1/mri/rawavg.mgz /home/PAResult/sub1/mri/orig.mgz --conform

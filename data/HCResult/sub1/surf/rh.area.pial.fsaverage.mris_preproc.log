@@ -1,0 +1,94 @@
+Sat Dec  7 18:04:08 CST 2024
+setenv SUBJECTS_DIR /home/HCResult
+cd /home/HCResult/sub1/surf
+/usr/local/freesurfer/7.4.1/bin/mris_preproc --s sub1 --hemi rh --meas area.pial --target fsaverage --out rh.area.pial.fsaverage.mgh
+
+Linux LAPTOP-N5G88QJH 4.4.0-19041-Microsoft #4355-Microsoft Thu Apr 12 17:37:00 PST 2024 x86_64 x86_64 x86_64 GNU/Linux
+mris_preproc 7.4.1
+freesurfer-linux-ubuntu20_x86_64-7.4.1-20230614-7eb8460
+tmpdir is ./tmp.mris_preproc.6884
+Src rh sphere.reg
+Trg rh sphere.reg
+
+
+
+
+---------------------------------------------------
+#@# 1/1 sub1 Sat Dec  7 18:04:08 CST 2024 --------------
+-rw-rw-r-- 1 root root 614579 Dec  7 17:34 /home/HCResult/sub1/surf/rh.area.pial
+-----------------------
+mri_surf2surf --srcsubject sub1 --srchemi rh --srcsurfreg sphere.reg --trgsubject fsaverage --trghemi rh --trgsurfreg sphere.reg --tval ./tmp.mris_preproc.6884/sub1.1.mgh --sval /home/HCResult/sub1/surf/rh.area.pial --jac --sfmt curv --noreshape --cortex
+Source registration surface changed to sphere.reg
+Target registration surface changed to sphere.reg
+
+7.4.1
+
+setenv SUBJECTS_DIR /home/HCResult
+cd /home/HCResult/sub1/surf
+mri_surf2surf --srcsubject sub1 --srchemi rh --srcsurfreg sphere.reg --trgsubject fsaverage --trghemi rh --trgsurfreg sphere.reg --tval ./tmp.mris_preproc.6884/sub1.1.mgh --sval /home/HCResult/sub1/surf/rh.area.pial --jac --sfmt curv --noreshape --cortex 
+
+sysname  Linux
+hostname LAPTOP-N5G88QJH
+machine  x86_64
+user     root
+srcsubject = sub1
+srcval     = /home/HCResult/sub1/surf/rh.area.pial
+srctype    = curv
+trgsubject = fsaverage
+trgval     = ./tmp.mris_preproc.6884/sub1.1.mgh
+trgtype    = 
+srcsurfreg = sphere.reg
+trgsurfreg = sphere.reg
+srchemi    = rh
+trghemi    = rh
+frame      = 0
+fwhm-in    = 0
+fwhm-out   = 0
+label-src  = rh.cortex.label
+label-trg  = rh.cortex.label
+OKToRevFaceOrder  = 1
+UseDualHemi = 0
+Reading source surface reg /home/HCResult/sub1/surf/rh.sphere.reg
+Loading source data
+Reading curvature file /home/HCResult/sub1/surf/rh.area.pial
+Reading source subject label mask rh.cortex.label
+masking the input
+Reading target surface reg /home/HCResult/fsaverage/surf/rh.sphere.reg
+Done
+Using surf2surf_nnfr()
+Mapping Source Volume onto Source Subject Surface with Jacobian Correction
+surf2surf_nnfr_jac: building source hash (res=16).
+Surf2SurfJac: 1st Forward Loop (163842)
+Surf2SurfJac: 2nd Forward Loop (163842)
+surf2surf_nnfr: building target hash (res=16).
+Surf2SurfJac: Reverse Loop (153641)
+Reverse Loop had 24759 hits
+INFO: nSrcLost = 0
+surf2surf_nnfr_jac() done
+nTrg121 = 142043, nTrgMulti = 21799, MnTrgMultiHits = 2.13579
+nSrc121 = 122986, nSrcLost =     0, nSrcMulti = 30655, MnSrcMultiHits = 2.14043
+Reading target space mask label rh.cortex.label
+masking the input
+Saving target data
+NOT Copying ctab from source
+Saving to ./tmp.mris_preproc.6884/sub1.1.mgh
+
+
+
+-----------------------
+mri_concat ./tmp.mris_preproc.6884/sub1.1.mgh --o rh.area.pial.fsaverage.mgh
+ninputs = 1
+Checking inputs
+nframestot = 1
+Allocing output
+Done allocing
+nframes = 1
+Writing to rh.area.pial.fsaverage.mgh
+
+
+
+Cleaning up
+-----------------------
+rm -r ./tmp.mris_preproc.6884
+Sat Dec  7 18:04:13 CST 2024
+mris_preproc done

@@ -1,0 +1,13 @@
+------------------------------
+SUBJECT sub1
+START_TIME Sat Dec 7 22:03:15 CST 2024
+END_TIME Sun Dec 8 01:23:40 CST 2024
+RUNTIME_HOURS 3.340
+USER root
+HOST LAPTOP-N5G88QJH
+PROCESSOR x86_64
+OS Linux
+UNAME Linux LAPTOP-N5G88QJH 4.4.0-19041-Microsoft #4355-Microsoft Thu Apr 12 17:37:00 PST 2024 x86_64 x86_64 x86_64 GNU/Linux
+VERSION 7.4.1 (freesurfer-linux-ubuntu20_x86_64-7.4.1-20230614-7eb8460)
+CMDPATH /usr/local/freesurfer/7.4.1/bin/recon-all
+CMDARGS -s sub1 -i /home/recon/PAdata/sub1/20181114_135359SYT0928helis005a1001.nii -all -qcache

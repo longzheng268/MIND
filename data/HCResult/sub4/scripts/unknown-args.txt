@@ -1,0 +1,6 @@
+-s
+sub1
+-i
+/home/recon/PAdata/sub1/20181114_135359SYT0928helis005a1001.nii
+-all
+-qcache

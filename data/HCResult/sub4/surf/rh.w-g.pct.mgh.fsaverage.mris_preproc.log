@@ -1,0 +1,94 @@
+Sun Dec  8 01:20:11 CST 2024
+setenv SUBJECTS_DIR /home/PAResult
+cd /home/PAResult/sub1/surf
+/usr/local/freesurfer/7.4.1/bin/mris_preproc --s sub1 --hemi rh --meas w-g.pct.mgh --target fsaverage --out rh.w-g.pct.mgh.fsaverage.mgh
+
+Linux LAPTOP-N5G88QJH 4.4.0-19041-Microsoft #4355-Microsoft Thu Apr 12 17:37:00 PST 2024 x86_64 x86_64 x86_64 GNU/Linux
+mris_preproc 7.4.1
+freesurfer-linux-ubuntu20_x86_64-7.4.1-20230614-7eb8460
+tmpdir is ./tmp.mris_preproc.30157
+Src rh sphere.reg
+Trg rh sphere.reg
+
+
+
+
+---------------------------------------------------
+#@# 1/1 sub1 Sun Dec  8 01:20:11 CST 2024 --------------
+-rw-rw-r-- 1 root root 533975 Dec  8 01:01 /home/PAResult/sub1/surf/rh.w-g.pct.mgh
+-----------------------
+mri_surf2surf --srcsubject sub1 --srchemi rh --srcsurfreg sphere.reg --trgsubject fsaverage --trghemi rh --trgsurfreg sphere.reg --tval ./tmp.mris_preproc.30157/sub1.1.mgh --sval /home/PAResult/sub1/surf/rh.w-g.pct.mgh --sfmt curv --noreshape --cortex
+Source registration surface changed to sphere.reg
+Target registration surface changed to sphere.reg
+
+7.4.1
+
+setenv SUBJECTS_DIR /home/PAResult
+cd /home/PAResult/sub1/surf
+mri_surf2surf --srcsubject sub1 --srchemi rh --srcsurfreg sphere.reg --trgsubject fsaverage --trghemi rh --trgsurfreg sphere.reg --tval ./tmp.mris_preproc.30157/sub1.1.mgh --sval /home/PAResult/sub1/surf/rh.w-g.pct.mgh --sfmt curv --noreshape --cortex 
+
+sysname  Linux
+hostname LAPTOP-N5G88QJH
+machine  x86_64
+user     root
+srcsubject = sub1
+srcval     = /home/PAResult/sub1/surf/rh.w-g.pct.mgh
+srctype    = curv
+trgsubject = fsaverage
+trgval     = ./tmp.mris_preproc.30157/sub1.1.mgh
+trgtype    = 
+srcsurfreg = sphere.reg
+trgsurfreg = sphere.reg
+srchemi    = rh
+trghemi    = rh
+frame      = 0
+fwhm-in    = 0
+fwhm-out   = 0
+label-src  = rh.cortex.label
+label-trg  = rh.cortex.label
+OKToRevFaceOrder  = 1
+UseDualHemi = 0
+Reading source surface reg /home/PAResult/sub1/surf/rh.sphere.reg
+Loading source data
+Reading curvature file /home/PAResult/sub1/surf/rh.w-g.pct.mgh
+Reading source subject label mask rh.cortex.label
+masking the input
+Reading target surface reg /home/PAResult/fsaverage/surf/rh.sphere.reg
+Done
+Using surf2surf_nnfr()
+Mapping Source Volume onto Source Subject Surface
+surf2surf_nnfr: building source hash (res=16).
+Surf2Surf: Forward Loop (163842)
+
+surf2surf_nnfr: building target hash (res=16).
+Surf2Surf: Reverse Loop (130069)
+Reverse Loop had 13534 hits
+Surf2Surf: Dividing by number of hits (163842)
+INFO: nSrcLost = 0
+nTrg121 = 151898, nTrgMulti = 11944, MnTrgMultiHits = 2.13312
+nSrc121 = 91413, nSrcLost =     0, nSrcMulti = 38656, MnSrcMultiHits = 2.22379
+Reading target space mask label rh.cortex.label
+masking the input
+Saving target data
+NOT Copying ctab from source
+Saving to ./tmp.mris_preproc.30157/sub1.1.mgh
+
+
+
+-----------------------
+mri_concat ./tmp.mris_preproc.30157/sub1.1.mgh --o rh.w-g.pct.mgh.fsaverage.mgh
+ninputs = 1
+Checking inputs
+nframestot = 1
+Allocing output
+Done allocing
+nframes = 1
+Writing to rh.w-g.pct.mgh.fsaverage.mgh
+
+
+
+Cleaning up
+-----------------------
+rm -r ./tmp.mris_preproc.30157
+Sun Dec  8 01:20:14 CST 2024
+mris_preproc done

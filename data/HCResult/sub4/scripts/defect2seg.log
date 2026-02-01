@@ -1,0 +1,68 @@
+Log file for defect2seg
+Sun Dec  8 00:15:57 CST 2024
+
+setenv SUBJECTS_DIR /home/PAResult
+cd /home/PAResult/sub1/scripts
+/usr/local/freesurfer/7.4.1/bin/defect2seg --s sub1 --cortex
+
+freesurfer-linux-ubuntu20_x86_64-7.4.1-20230614-7eb8460
+defect2seg 7.4.1
+Linux LAPTOP-N5G88QJH 4.4.0-19041-Microsoft #4355-Microsoft Thu Apr 12 17:37:00 PST 2024 x86_64 x86_64 x86_64 GNU/Linux
+pid 23985
+mri_label2label --label-cortex /home/PAResult/sub1/surf/lh.orig.nofix /home/PAResult/sub1/mri/aseg.presurf.mgz 0 /home/PAResult/sub1/label/lh.nofix.cortex.label
+
+ Generating cortex label... RemoveHipAmgy=0
+ NucAccIsMedialWall=0
+ mris->useRealRAS=0
+6 non-cortical segments detected
+only using segment with 7226 vertices
+erasing segment 1 (vno[0] = 82144)
+erasing segment 2 (vno[0] = 83146)
+erasing segment 3 (vno[0] = 84125)
+erasing segment 4 (vno[0] = 100225)
+erasing segment 5 (vno[0] = 102370)
+mri_label2vol --defects /home/PAResult/sub1/surf/lh.orig.nofix /home/PAResult/sub1/surf/lh.defect_labels /home/PAResult/sub1/mri/orig.mgz 1000 0 /home/PAResult/sub1/mri/surface.defects.mgz /home/PAResult/sub1/label/lh.nofix.cortex.label
+mri_label2vol supposed to be reproducible but seed not set
+Contraining to label /home/PAResult/sub1/label/lh.nofix.cortex.label
+Changing input type 0 to MRI_INT
+Converting defects to volume: offset=1000, merge=0
+Writing to /home/PAResult/sub1/mri/surface.defects.mgz
+mris_defects_pointset -s /home/PAResult/sub1/surf/lh.orig.nofix -d /home/PAResult/sub1/surf/lh.defect_labels -o /home/PAResult/sub1/surf/lh.defects.pointset --label /home/PAResult/sub1/label/lh.nofix.cortex.label
+Reading in surface /home/PAResult/sub1/surf/lh.orig.nofix
+Reading in defect segmentation /home/PAResult/sub1/surf/lh.defect_labels
+Reading in label /home/PAResult/sub1/label/lh.nofix.cortex.label
+#VMPC# mris_defects_pointset 0
+mris_defects_pointset done
+mri_label2label --label-cortex /home/PAResult/sub1/surf/rh.orig.nofix /home/PAResult/sub1/mri/aseg.presurf.mgz 0 /home/PAResult/sub1/label/rh.nofix.cortex.label
+
+ Generating cortex label... RemoveHipAmgy=0
+ NucAccIsMedialWall=0
+ mris->useRealRAS=0
+8 non-cortical segments detected
+only using segment with 7198 vertices
+erasing segment 0 (vno[0] = 29870)
+erasing segment 2 (vno[0] = 47610)
+erasing segment 3 (vno[0] = 49737)
+erasing segment 4 (vno[0] = 74820)
+erasing segment 5 (vno[0] = 78599)
+erasing segment 6 (vno[0] = 79610)
+erasing segment 7 (vno[0] = 86708)
+mri_label2vol --defects /home/PAResult/sub1/surf/rh.orig.nofix /home/PAResult/sub1/surf/rh.defect_labels /home/PAResult/sub1/mri/surface.defects.mgz 2000 1 /home/PAResult/sub1/mri/surface.defects.mgz /home/PAResult/sub1/label/rh.nofix.cortex.label
+mri_label2vol supposed to be reproducible but seed not set
+Contraining to label /home/PAResult/sub1/label/rh.nofix.cortex.label
+Converting defects to volume: offset=2000, merge=1
+Writing to /home/PAResult/sub1/mri/surface.defects.mgz
+mris_defects_pointset -s /home/PAResult/sub1/surf/rh.orig.nofix -d /home/PAResult/sub1/surf/rh.defect_labels -o /home/PAResult/sub1/surf/rh.defects.pointset --label /home/PAResult/sub1/label/rh.nofix.cortex.label
+Reading in surface /home/PAResult/sub1/surf/rh.orig.nofix
+Reading in defect segmentation /home/PAResult/sub1/surf/rh.defect_labels
+Reading in label /home/PAResult/sub1/label/rh.nofix.cortex.label
+#VMPC# mris_defects_pointset 0
+mris_defects_pointset done
+ 
+Started at Sun Dec 8 00:15:57 CST 2024 
+Ended   at Sun Dec  8 00:16:17 CST 2024
+Defect2seg-Run-Time-Sec 20
+Defect2seg-Run-Time-Min 0.40
+Defect2seg-Run-Time-Hours 0.01
+ 
+defect2seg Done

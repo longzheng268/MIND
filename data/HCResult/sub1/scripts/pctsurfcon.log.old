@@ -1,0 +1,9 @@
+Logfile for pctsurfcon
+Sat Dec  7 17:41:59 CST 2024
+setenv SUBJECTS_DIR /home/HCResult
+cd /home/HCResult/sub1/scripts
+/usr/local/freesurfer/7.4.1/bin/pctsurfcon
+pctsurfcon 7.4.1
+Linux LAPTOP-N5G88QJH 4.4.0-19041-Microsoft #4355-Microsoft Thu Apr 12 17:37:00 PST 2024 x86_64 x86_64 x86_64 GNU/Linux
+FREESURFER_HOME /usr/local/freesurfer/7.4.1
+Cleaning up

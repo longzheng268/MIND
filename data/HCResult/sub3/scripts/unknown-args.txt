@@ -1,0 +1,6 @@
+-s
+sub2
+-i
+/home/recon/HCdata/sub2/sub2.nii
+-all
+-qcache

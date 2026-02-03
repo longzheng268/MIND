@@ -2,7 +2,7 @@
 # 批量运行 FreeSurfer recon-all，适配 MIND 项目结构
 
 INPUT_ROOT="./data/NIfTI"
-OUTPUT_DIR="./data/PAResult"
+OUTPUT_DIR="./data/Recon-Result"
 LICENSE="/usr/local/freesurfer/license.txt"
 MAX_PARALLEL=100  # CPU密集型，建议并行数小
 
@@ -25,7 +25,7 @@ for group in HC PD prodromal; do
     for nii in "$subj_dir"/*.nii*; do
       [ -f "$nii" ] || continue
       sid="${group}_${subj}"
-      TASKS+=("$nii|$sid")
+        TASKS+=("$nii|$sid|$group")
     done
   done
 done
@@ -36,14 +36,16 @@ echo "共找到 ${#TASKS[@]} 个任务，准备并行处理 (并行数: $MAX_PAR
 function run_one() {
   local nii_path="$1"
   local sid="$2"
-  echo ">>> 开始处理: $sid"
+    local group="$3"
+    mkdir -p "$OUTPUT_DIR/$group"
+    echo ">>> 开始处理: $sid ($group)"
   recon-all -i "$nii_path" -s "$sid" -sd "$OUTPUT_DIR" -all
-  echo "<<< 处理完成: $sid"
+    echo "<<< 处理完成: $sid ($group)"
 }
 
 export -f run_one
 export OUTPUT_DIR
-
 printf "%s\n" "${TASKS[@]}" | xargs -P $MAX_PARALLEL -I{} bash -c 'arr=(${0//|/ }); run_one "${arr[0]}" "${arr[1]}"' {}
+  printf "%s\n" "${TASKS[@]}" | xargs -P $MAX_PARALLEL -I{} bash -c 'arr=(${0//|/ }); run_one "${arr[0]}" "${arr[1]}" "${arr[2]}"' {}
 
 echo "全部任务执行完毕！"

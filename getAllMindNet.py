@@ -4,7 +4,6 @@ import pickle
 import numpy as np
 import pandas as pd
 from MIND import compute_MIND
-import scipy.io
 
 # freesurfer预处理后的被试所在主路径，请提前删除掉此文件夹中的’fasverage‘
 main_folder = './/data//PAResult'
@@ -39,12 +38,7 @@ for subdir in os.listdir(main_folder):
     dataType = type(MIND)
     print("The data type is:", dataType)
 
-    # 将数据保存为MATLAB的.mat文件
-    scipy.io.savemat(subdir_path + '/MIND.mat', {'data': MIND})
-
-    print("转换完成，.mat文件已保存。")
-
-
+    # 仅保存为Python的pickle文件
     surfer_location = subdir_path + '/'
     output_file = os.path.join(surfer_location, 'MIND.pkl')
     with open(output_file, 'wb') as f:

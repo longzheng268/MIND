@@ -7,9 +7,9 @@ from MIND import compute_MIND
 import scipy.io
 
 # freesurfer预处理后的被试所在主路径，请提前删除掉此文件夹中的’fasverage‘
-main_folder = 'D:/Linux/rootfs/home/PAResult'
+main_folder = './/data//PAResult'
 # 皮层分区文件所在主路径
-parcel_location = 'D:/6 mainCode/MIND/parcellation/'
+parcel_location = './/data//parcellation/'
 
 # 遍历主文件夹中的所有子文件夹
 for subdir in os.listdir(main_folder):

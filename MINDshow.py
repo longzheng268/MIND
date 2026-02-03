@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 # 加载 DataFrame
 # df = pd.read_pickle('D:/Linux/rootfs/home/HCResult/sub1/MIND.pkl')
 # df = pd.read_pickle('D:/Linux/rootfs/home/HCResult/demo1dcmnii/MIND.pkl')
-df = pd.read_pickle('D:/6 mainCode/MIND/fsSubjects/UM_1_0050338/MIND.pkl')
+df = pd.read_pickle('.//data//HCResult//sub1//MIND.pkl')
 
 # 绘制彩色矩阵
 plt.imshow(df, cmap='viridis', interpolation='nearest')

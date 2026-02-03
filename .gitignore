@@ -1,0 +1,20 @@
+# 忽略所有数据和结果文件，只保留结构
+data/
+!data/.gitkeep
+
+
+logs/
+*.log
+
+# 忽略缓存和临时文件
+__pycache__/
+*.pyc
+*.pyo
+*.tmp
+*.bak
+
+# 只保留必要的脚本和文档
+!*.py
+!README.md
+!requirements.txt
+!doc/

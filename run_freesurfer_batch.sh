@@ -39,7 +39,7 @@ function run_one() {
     local group="$3"
     mkdir -p "$OUTPUT_DIR/$group"
     echo ">>> 开始处理: $sid ($group)"
-  recon-all -i "$nii_path" -s "$sid" -sd "$OUTPUT_DIR" -all
+  recon-all -i "$nii_path" -s "$sid" -sd "$OUTPUT_DIR/$group" -all
     echo "<<< 处理完成: $sid ($group)"
 }
 

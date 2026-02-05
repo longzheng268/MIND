@@ -2,8 +2,8 @@
 # 自动批量运行 FastSurfer，自动查找 run_fastsurfer.sh
 # 适配 MIND 项目目录结构
 
-INPUT_ROOT="/2025212358/MIND/data/NIfTI"
-OUTPUT_DIR="/2025212358/MIND/data/PAResult"
+INPUT_ROOT="./NIfTI"
+OUTPUT_DIR="./data/Recon-Result"
 LICENSE="/usr/local/freesurfer/license.txt"
 MAX_PARALLEL=100
 
@@ -29,7 +29,7 @@ for group in HC PD prodromal; do
     for nii in "$subj_dir"/*.nii*; do
       [ -f "$nii" ] || continue
       sid="${group}_${subj}"
-      TASKS+=("$nii|$sid")
+      TASKS+=("$nii|$sid|$group")
     done
   done
 done
@@ -40,21 +40,23 @@ echo "共找到 ${#TASKS[@]} 个任务，准备并行处理 (并行数: $MAX_PAR
 function run_one() {
   local nii_path="$1"
   local sid="$2"
-  echo ">>> 开始处理: $sid"
+  local group="$3"
+  mkdir -p "$OUTPUT_DIR/$group"
+  echo ">>> 开始处理: $sid ($group)"
   bash "$FASTSURFER_BIN" \
     --t1 "$nii_path" \
-    --sd "$OUTPUT_DIR" \
+    --sd "$OUTPUT_DIR/$group" \
     --sid "$sid" \
     --fs_license "$LICENSE" \
     --parallel \
     --device cpu \
     --allow_root
-  echo "<<< 处理完成: $sid"
+  echo "<<< 处理完成: $sid ($group)"
 }
 
 export -f run_one
 export FASTSURFER_BIN OUTPUT_DIR LICENSE
 
-printf "%s\n" "${TASKS[@]}" | xargs -P $MAX_PARALLEL -I{} bash -c 'arr=(${0//|/ }); run_one "${arr[0]}" "${arr[1]}"' {}
+printf "%s\n" "${TASKS[@]}" | xargs -P $MAX_PARALLEL -I{} bash -c 'arr=(${0//|/ }); run_one "${arr[0]}" "${arr[1]}" "${arr[2]}"' {}
 
 echo "全部任务执行完毕！"

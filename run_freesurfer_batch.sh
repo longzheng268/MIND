@@ -4,7 +4,7 @@
 INPUT_ROOT="./data/NIfTI"
 OUTPUT_DIR="./data/Recon-Result"
 LICENSE="/usr/local/freesurfer/license.txt"
-MAX_PARALLEL=100  # CPU密集型，建议并行数小
+MAX_PARALLEL=6  # CPU密集型，建议并行数小
 
 # 检查 FreeSurfer 环境
 if ! command -v recon-all &> /dev/null; then

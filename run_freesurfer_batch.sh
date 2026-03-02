@@ -24,6 +24,13 @@ for group in HC PD prodromal; do
   for subj_dir in "$INPUT_ROOT/$group"/*; do
     [ -d "$subj_dir" ] || continue
     subj=$(basename "$subj_dir")
+    # skip if output already exists with a final brain file
+    sid="${group}_${subj}"
+    outdir="$OUTPUT_DIR/$group/$sid"
+    if [ -d "$outdir" ] && [ -f "$outdir/mri/brain.mgz" ]; then
+      echo "[跳过] 已处理: $sid"
+      continue
+    fi
     for nii in "$subj_dir"/*.nii*; do
       [ -f "$nii" ] || continue
       # 用冒号或管道符分割，确保路径中包含空格时不会崩

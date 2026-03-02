@@ -72,6 +72,7 @@ export OUTPUT_DIR
 
 # 只保留一行 printf，修正参数传递方式
 # 之前的脚本里写了两行 printf，会导致同一个任务跑两遍，产生文件锁冲突
-printf "%s\n" "${TASKS[@]}" | xargs -n 1 -P $MAX_PARALLEL -I {} bash -c 'run_one "$@"' _ {}
+# 注意：不要同时使用 -n 和 -I，否则 xargs 会打印警告并忽略 -n
+printf "%s\n" "${TASKS[@]}" | xargs -P $MAX_PARALLEL -I {} bash -c 'run_one "$@"' _ {}
 
 echo "全部任务执行完毕！"

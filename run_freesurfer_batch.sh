@@ -24,13 +24,16 @@ for group in HC PD prodromal; do
   for subj_dir in "$INPUT_ROOT/$group"/*; do
     [ -d "$subj_dir" ] || continue
     subj=$(basename "$subj_dir")
-    # skip if output already exists with a final brain file
+    # skip if output already finished (look for recon-all.done)
     sid="${group}_${subj}"
     outdir="$OUTPUT_DIR/$group/$sid"
-    if [ -d "$outdir" ] && [ -f "$outdir/mri/brain.mgz" ]; then
-      echo "[跳过] 已处理: $sid"
+    if [ -d "$outdir" ] && [ -f "$outdir/scripts/recon-all.done" ]; then
+      echo "[跳过] 已完全跑完: $sid"
       continue
     fi
+    # if output dir exists but no done‑file, we'll still enqueue it so run_one
+    # can resume instead of re-importing
+
     for nii in "$subj_dir"/*.nii*; do
       [ -f "$nii" ] || continue
       # 用冒号或管道符分割，确保路径中包含空格时不会崩
@@ -43,18 +46,24 @@ echo "共找到 ${#TASKS[@]} 个任务，准备并行处理 (并行数: $MAX_PAR
 
 # 并行处理
 function run_one() {
-  # 使用 IFS 确保变量读取准确
   IFS='|' read -r nii_path subj group <<< "$1"
-  
-  # 重新组合 SID，确保唯一性
+
   local full_sid="${group}_${subj}"
   local target_sd="$OUTPUT_DIR/$group"
-  
+  local subjdir="$target_sd/$full_sid"
+
   mkdir -p "$target_sd"
-  
+
   echo ">>> 开始处理: $full_sid ($group)"
-  # 执行 recon-all，-no-isrunning 跳过旧锁文件
-  recon-all -i "$nii_path" -s "$full_sid" -sd "$target_sd" -all -no-isrunning
+
+  # 如果已经存在该被试数据，直接续跑而不加 -i
+  if [ -d "$subjdir" ] && [ -f "$subjdir/mri/orig.mgz" ]; then
+    echo "--- 检测到已有部分结果，使用续跑模式: $full_sid"
+    recon-all -s "$full_sid" -sd "$target_sd" -all -no-isrunning
+  else
+    recon-all -i "$nii_path" -s "$full_sid" -sd "$target_sd" -all -no-isrunning
+  fi
+
   echo "<<< 处理完成: $full_sid ($group)"
 }
 

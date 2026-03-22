@@ -1,10 +1,13 @@
 # 忽略所有数据和结果文件，只保留结构
 data/
 !data/.gitkeep
-
-
+量表/
+analysis_*/
 logs/
 *.log
+*.csv
+*.png
+*.xlsx
 
 # 忽略缓存和临时文件
 __pycache__/

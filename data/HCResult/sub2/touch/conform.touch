@@ -1,1 +1,0 @@
-mri_convert /home/HCResult/sub2/mri/rawavg.mgz /home/HCResult/sub2/mri/orig.mgz --conform

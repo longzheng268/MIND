@@ -8,7 +8,7 @@ from nibabel.freesurfer.mghformat import load
 from collections import defaultdict
 from MIND_helpers import calculate_mind_network, is_outlier
 
-def get_vertex_df(surf_dir, features, parcellation):
+def get_vertex_df(surf_dir, features, parcellation, parcel_location):
 
     '''
     INPUT SPECIFICATIONS:
@@ -43,11 +43,11 @@ def get_vertex_df(surf_dir, features, parcellation):
     • parcellation (str): This is a string the location containing parcellation scheme to be used. The files 'lh.' + parcellation + '.annot' and 'rh.' + parcellation + '.annot' must exist inside the surf_dir/label directory.
     '''
 
-    #specify data locations
+    # specify data locations
     surfer_location = surf_dir + '/'
 
-    #Check inputs!
-    if (exists(surfer_location + '/label/lh.' + parcellation + '.annot') == False) or (exists(surfer_location + '/label/rh.' + parcellation + '.annot') == False):
+    # Check inputs!
+    if (exists(parcel_location + 'label/lh.' + parcellation + '.annot') == False) or (exists(parcel_location + '/label/rh.' + parcellation + '.annot') == False):
         raise Exception('Parcellation files not found.')
 
     all_shorthand_features = ['CT','Vol','SA','MC','SD']
@@ -113,8 +113,8 @@ def get_vertex_df(surf_dir, features, parcellation):
             raise Exception('Unrecognized format for feature input: ', feature)
 
     #Get annotation files
-    lh_annot = read_annot(surfer_location + '/label/lh.' + parcellation + '.annot', orig_ids = True)
-    rh_annot = read_annot(surfer_location + '/label/rh.' + parcellation + '.annot', orig_ids = True)
+    lh_annot = read_annot(parcel_location + 'label/lh.' + parcellation + '.annot', orig_ids = True)
+    rh_annot = read_annot(parcel_location + 'label/rh.' + parcellation + '.annot', orig_ids = True)
 
     annot_dict = {'lh':lh_annot, 'rh':rh_annot}
 

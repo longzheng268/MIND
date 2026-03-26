@@ -5,9 +5,9 @@ import pandas as pd
 from MIND_helpers import calculate_mind_network, is_outlier
 from get_vertex_df import get_vertex_df
 
-def compute_MIND(surf_dir, features, parcellation, filter_vertices=False, resample=False, n_samples = 4000):
+def compute_MIND(surf_dir, features, parcellation, parcel_location,filter_vertices=False):
 
-	vertex_data, regions, features_used = get_vertex_df(surf_dir, features, parcellation)
+	vertex_data, regions, features_used = get_vertex_df(surf_dir, features, parcellation, parcel_location)
 	
 	'''
 	Filter the data, do some QC checks here.
@@ -43,7 +43,7 @@ def compute_MIND(surf_dir, features, parcellation, filter_vertices=False, resamp
 
 	print('Computing MIND...')
 	#calculate MIND network
-	MIND = calculate_mind_network(vertex_data, features_used, regions, resample=resample, n_samples = n_samples)
+	MIND = calculate_mind_network(vertex_data, features_used, regions)
 
 	print('Done!')
 	return MIND

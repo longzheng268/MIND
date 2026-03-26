@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(conda run:*)"
+      "Bash(conda run:*)",
+      "Bash(ls *.py)",
+      "Bash(git add:*)"
     ]
   }
 }

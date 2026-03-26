@@ -9,7 +9,7 @@ from config import *
 apply_style()
 
 # --- 1. 配置与参数 ---
-DATA_FILE = './量表/MIND_Longitudinal_Clean_Data_filled.csv'
+DATA_FILE = './scale/MIND_Longitudinal_Clean_Data_filled.csv'
 BASE_OUTPUT_DIR = './MIND_Research_Results/'
 SCALES = ['UPDRS3', 'MoCA', 'GDS15_all', 'RBDSQ_all', 'NP1APAT', 'NP1FATG']
 

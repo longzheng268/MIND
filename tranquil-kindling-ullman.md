@@ -1,0 +1,99 @@
+# 分析脚本重命名计划
+
+## 背景
+用户按照论文分析流程将所有脚本组织为 Step1-4，Step2 内按分析层级用字母区分，辅助工具文件加 utils_ 前缀。
+
+## 完整重命名映射
+
+### Step 1 — 平均空间分布脑图
+| 原文件名 | 新文件名 |
+|---|---|
+| baseline_group_mean_average_surface_viz.py | step1_mean_surface_maps.py |
+
+### Step 2 — 组间统计差异（Nodal / Edge-wise）
+| 原文件名 | 新文件名 | 说明 |
+|---|---|---|
+| baseline_professional_viz.py | step2a_global_mind_comparison.py | 全局对比：雷达图+箱线+脑表面T图+连接矩阵 |
+| MIND_Network_Visualizer.py | step2b_7network_radar_boxplot.py | 7网络雷达图+并排箱线 |
+| mind_inferential_analysis.py | step2b_network_ancova_7nets.py | 7网络列 ANCOVA 推断分析 |
+| plot_mind_network.py | step2b_connectome_viz.py | nilearn 脑连接体可视化 |
+| nodal_wise_ancova_stats.py | step2c_nodal_strength_ancova.py | 节点强度 ANCOVA（含 T-heatmap + 前10节点） |
+| nodal_wise_ancova_stats_ver2.0.py | step2c_nodal_strength_ancova_surface.py | 节点强度 ANCOVA + 3D 脑表面渲染 |
+| mind_nodal_and_edgewise_stats.py | step2d_edgewise_diff_heatmap.py | 边-wise 组间差异热力图 |
+| mind_nodal_and_edgewise_stats_advanced.py | step2d_edgewise_hub_module.py | Hub 脆弱性 + 模块内/间连接分析 |
+| mind_nodal_and_edgewise_stats_advanced-ver2.0.py | step2d_edgewise_violin_tmap.py | 全局小提琴图 + 边-wise T 矩阵 |
+| mind_nodal_and_edgewise_stats_anova_advancedy_ver3.0.py | step2d_edgewise_anova_4group.py | 边 ANOVA（四组，FDR校正） |
+| MIND_ANOVA_Connectome.py | step2_stats_connectome_anova_3group.py | 3组连接矩阵 ANOVA（纯统计） |
+| MIND_ANOVA_Connectome-new.py | step2_stats_connectome_anova_4group.py | 4组连接矩阵 ANOVA（纯统计） |
+| MIND_Network_Statistical_Test_P.py | step2_stats_network_ancova.py | 网络 ANCOVA 统计检验 |
+| MIND_Network_Subgroup_Analysis.py | step2_stats_subgroup_aggregation.py | 子组数据聚合（无绘图） |
+
+### Step 3 — LME 纵向预测
+| 原文件名 | 新文件名 | 说明 |
+|---|---|---|
+| longitudinal_mind_prediction.py | step3a_lme_full_timepoints.py | 全时间点（BL~V12）LME |
+| longitudinal_mind_prediction-v2-v4.py | step3b_lme_2year_updrs.py | 2年随访 UPDRS-III LME |
+| longitudinal_mind_prediction-v2-v4-muli.py | step3c_lme_2year_multiscale.py | 2年随访多量表 LME |
+| MIND_Scientific_Analysis.py | step3d_baseline_regression.py | 基线 MIND 回归预测（Aim1-3） |
+
+### Step 4 — ML 预测模型
+暂无现有文件，留空备用。
+
+### 工具文件（utils_ 前缀）
+| 原文件名 | 新文件名 |
+|---|---|
+| MINDshow.py | utils_mindshow.py |
+
+### 核心计算文件（保持不变）
+MIND.py、MIND_helpers.py、get_vertex_df.py、register_and_vol2surf.py、
+batch_run_mind.py、getAllMindNet.py、analysis_data.py、MIND_Clinical_Master_Builder.py、
+config.py
+
+## 执行方式
+- 全部用 `mv`（这些文件均为 git 未追踪状态，无需 git mv）
+- 重命名后验证：`ls step*.py utils*.py | sort` 确认无遗漏
+- 无需修改文件内部代码（文件名不被任何脚本相互引用）
+
+## 验证
+```bash
+ls step1*.py step2*.py step3*.py utils*.py | sort
+```
+预期共输出 20 个新文件名。
+
+
+合并记录（2026-03-27 执行）：
+
+## 合并映射表
+
+| 合并后文件 | 合并源文件（已删除） | 输出目录 |
+|---|---|---|
+| `step2c_nodal_strength_ancova.py` | `step2c_nodal_strength_ancova_surface.py` | `./nodal_statistical_results/` |
+| `step2d_edgewise_analysis.py` | `step2d_edgewise_diff_heatmap.py`<br>`step2d_edgewise_violin_tmap.py`<br>`step2d_edgewise_anova_4group.py`<br>`step2d_edgewise_hub_module.py` | `./edgewise_results/` |
+| `step2_stats_connectome_anova.py` | `step2_stats_connectome_anova_3group.py`<br>`step2_stats_connectome_anova_4group.py` | `./analysis_results_3group/`<br>`./analysis_results_4group/` |
+| `step3_lme_updrs.py` | `step3a_lme_full_timepoints.py`<br>`step3b_lme_2year_updrs.py` | `./lme_updrs_results/` |
+
+## 合并后现有脚本列表
+
+Step 1 — 平均空间分布脑图
+  step1_mean_surface_maps.py
+
+Step 2 — 组间统计差异
+  step2a_global_mind_comparison.py     ← 全局对比（雷达+箱线+T图+连接矩阵）
+  step2b_7network_radar_boxplot.py     ← 7网络雷达图+并排箱线
+  step2b_connectome_viz.py             ← nilearn 脑连接体图
+  step2b_network_ancova_7nets.py       ← 7网络列 ANCOVA 推断
+  step2c_nodal_strength_ancova.py      ← [合并] 节点强度 ANCOVA + 3D脑图（原2个→1个）
+  step2d_edgewise_analysis.py          ← [合并] 差异热力图+小提琴+T矩阵+Hub+模块（原4个→1个）
+  step2_stats_connectome_anova.py      ← [合并] 3组+4组 Connectome ANOVA（原2个→1个）
+  step2_stats_network_ancova.py        ← 网络 ANCOVA 检验（独立）
+  step2_stats_subgroup_aggregation.py  ← 子组数据聚合（独立）
+
+Step 3 — LME 纵向预测
+  step3_lme_updrs.py                   ← [合并] 全时间点+2年 UPDRS-III（原2个→1个）
+  step3c_lme_2year_multiscale.py       ← 2年多量表（独立）
+  step3d_baseline_regression.py        ← 基线回归预测（独立）
+
+Step 4 — ML 预测（留空备用）
+
+工具
+  utils_mindshow.py

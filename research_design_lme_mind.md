@@ -187,10 +187,16 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 
 ---
 
-## 七、待实现任务（对应 step3 脚本）
+## 七、实现进度（对应 step3 脚本）
 
-- [ ] `step3c_lme_2year_multiscale.py`：在 `smf.mixedlm()` 中加入 `re_formula="~Time"`（随机斜率）
-- [ ] `step3c_lme_2year_multiscale.py`：`formula2` 同时包含 `Time * Group` 和 `Time * MIND_BL`
-- [ ] `step3c_lme_2year_multiscale.py`：加入简单斜率分析，输出各 MIND 水平的斜率估计与置信区间
-- [ ] `step3_lme_updrs.py`：同步以上改进
-- [ ] 考虑将随机斜率参数也纳入 config.py（`LME_RE_FORMULA`）
+- [x] `step3c_lme_2year_multiscale.py`：加入 `re_formula=LME_RE_FORMULA`（三级降级，来自 config.py）
+- [x] `step3c_lme_2year_multiscale.py`：`formula2` 同时包含 `Time * Group` 和 `Time * MIND_BL`
+- [x] `step3c_lme_2year_multiscale.py`：简单斜率（Time:MIND_BL β/SE/95%CI/p）输出到 Statistical_Summary.txt
+- [x] `step3_lme_updrs.py`：重构为双模型结构，补充 `C(Group_MIND)` 消除疾病阶段混淆
+- [x] `config.py` 新增 `LME_RE_FORMULA = "~Time"` 和 `LME_METHODS`
+
+## 八、仍待确认
+
+- [ ] `step3d_baseline_regression.py`：读取 `MIND_Final_Analysis_Table.csv`（宽格式），该文件路径未知，字段名与其他脚本不同，需确认
+- [ ] 多量表 FDR 校正（BH 法）：step3c 当前无跨量表 FDR，若论文需要需补充
+- [ ] 事后组间斜率两两比较（emtrends 等价 Python 实现）：当前仅报告 Time:MIND_BL 整体系数

@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# 虚拟环境
+.env
+.venv
+venv/
+env/
+
+# 分析结果输出目录（体积大，不纳入版本控制）
+lme_updrs_results/
+edgewise_results/
+nodal_statistical_results/
+edge_statistical_results/
+statistical_results_nodal_edge/
+statistical_results_advanced/
+analysis_results_advanced_network/
+analysis_results/
+analysis_results-new/
+analysis_results_3group/
+analysis_results_4group/
+final_aligned_results/
+results_2year_fixed/
+MIND_Research_Results/
+connectome_anova_results/
+
+# 生成的图片（通过脚本重新生成）
+*.png
+*.pdf
+*.svg
+*.eps
+
+# 数据目录（体积大，通过其他方式同步）
+data/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code 工作目录
+.claude/

@@ -103,6 +103,13 @@ GRID_LINESTYLE = ':'  # 虚线网格（更柔和）
 # ── seaborn lineplot 误差条 ───────────────────────────────────────────────────
 ERRORBAR = ('ci', 95)  # 95% 置信区间
 
+# ── 混合效应模型（LME）参数 ────────────────────────────────────────────────────
+# 优化器尝试顺序：从快到健壮，任一成功即停止，全失败后降级为 OLS
+LME_METHODS = ['lbfgs', 'powell', 'nm', 'bfgs']
+# 随机效应公式：随机截距 + 随机斜率（等价于 R 的 (1 + Time | Subject_ID)）
+# 若样本量不足导致奇异矩阵，代码自动降级为仅随机截距（re_formula=None）
+LME_RE_FORMULA = "~Time"
+
 # ── 脑连接体可视化参数（nilearn） ─────────────────────────────────────────────
 CONNECTOME_NODE_COLOR     = 'darkred'  # 节点颜色
 CONNECTOME_NODE_SIZE      = 40         # 节点大小

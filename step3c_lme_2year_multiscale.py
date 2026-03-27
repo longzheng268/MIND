@@ -50,26 +50,32 @@ def run_research_pipeline():
 
         # 定义公式（放在 try 块外面，防止出现 UnboundLocalError）
         # Model 1: 比较四组间的斜率差异 (ref='HC')
-        formula1 = f"{scale} ~ Time * C(Group_MIND, Treatment, ref='HC') + Age_at_Visit + C(Sex) + Education"
+        formula1 = f"{scale} ~ Time * C(Group_MIND, Treatment('HC')) + Age_at_Visit + C(Sex) + Education"
         # Model 2: MIND 对恶化速率的独立预测作用
         formula2 = f"{scale} ~ Time * MIND_BL + {scale}_BL + C(Group_MIND) + Age_at_Visit + C(Sex) + Education"
 
         try:
-            # --- 模型 1: 四组轨迹差异 ---
-            md1 = smf.mixedlm(formula1, df_clean, groups=df_clean["Original_SUB_ID"])
-            mdf1 = md1.fit(method='lbfgs', reml=False)
-            
-            # --- 模型 2: MIND 交互效应 ---
-            md2 = smf.mixedlm(formula2, df_clean, groups=df_clean["Original_SUB_ID"])
-            mdf2 = md2.fit(method='lbfgs', reml=False)
+            # 依次尝试 LME_METHODS 中的优化器，任一成功即停止（优化器列表来自 config.py）
+            mdf1 = mdf2 = None
+            for _m in LME_METHODS:
+                try:
+                    mdf1 = smf.mixedlm(formula1, df_clean, groups=df_clean["Original_SUB_ID"]).fit(method=_m, reml=False)
+                    mdf2 = smf.mixedlm(formula2, df_clean, groups=df_clean["Original_SUB_ID"]).fit(method=_m, reml=False)
+                    break
+                except Exception:
+                    continue
+            if mdf1 is None:
+                raise ValueError("所有优化器均失败，转 OLS 保底")
 
             # --- 绘图 1: 四组轨迹 (Group Progression) ---
             plt.figure(figsize=FIG_SINGLE)
             df_clean['Fitted_G'] = mdf1.predict(df_clean)
-            sns.lineplot(data=df_clean, x='Time', y='Fitted_G', hue='Group_MIND', 
+            sns.lineplot(data=df_clean, x='Time', y='Fitted_G', hue='Group_MIND',
+                         hue_order=GROUP_ORDER, palette=GROUP_PALETTE,
                          marker=MARKER, markersize=MARKERSIZE, errorbar=ERRORBAR, linewidth=LINEWIDTH)
-            plt.xticks([0, 1, 2], ['Baseline (BL)', 'Year 1 (V04)', 'Year 2 (V06)'])
-            plt.title(f"Figure 1: {scale} Longitudinal Trajectory by Disease Groups")
+            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            plt.title(f"Figure 1: {scale} Longitudinal Trajectory by Disease Groups", fontsize=FONT_TITLE)
+            plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
             plt.savefig(os.path.join(scale_dir, f"Fig1_Group_Progression.png"), dpi=DPI)
             plt.close()
 
@@ -83,9 +89,10 @@ def run_research_pipeline():
             plt.figure(figsize=FIG_SINGLE)
             sns.lineplot(data=df_viz, x='Time', y='Fitted_M', hue='MIND_Level', 
                          hue_order=MIND_LEVEL_ORDER,
-                         palette=CMAP_TRAJECTORY, marker='s', markersize=MARKERSIZE, errorbar=ERRORBAR, linewidth=LINEWIDTH)
-            plt.xticks([0, 1, 2], ['Baseline (BL)', 'Year 1 (V04)', 'Year 2 (V06)'])
-            plt.title(f"Figure 2: {scale} Progression Predicted by Baseline MIND")
+                         palette=CMAP_TRAJECTORY, marker='s', markersize=MARKERSIZE, errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK)
+            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            plt.title(f"Figure 2: {scale} Progression Predicted by Baseline MIND", fontsize=FONT_TITLE)
+            plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
             plt.savefig(os.path.join(scale_dir, f"Fig2_MIND_Prediction.png"), dpi=DPI)
             plt.close()
 

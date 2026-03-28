@@ -110,10 +110,8 @@ def run_extended_pipeline():
                     f" + {ybl} + Age_at_Visit + C(Sex) + Education")
 
         try:
-            f1 = build_formula1(y, ybl)
-            f2 = build_formula2(y, ybl)
-            mdf1 = _fit_lme(f1, df_clean, 'Original_SUB_ID')
-            mdf2 = _fit_lme(f2, df_clean, 'Original_SUB_ID')
+            mdf1 = _fit_lme(formula1, df_clean, 'Original_SUB_ID')
+            mdf2 = _fit_lme(formula2, df_clean, 'Original_SUB_ID')
 
             # 图1：四组纵向轨迹（模型1预测值）
             plt.figure(figsize=FIG_SINGLE)
@@ -124,7 +122,7 @@ def run_extended_pipeline():
                          marker=MARKER, markersize=MARKERSIZE,
                          errorbar=ERRORBAR, linewidth=LINEWIDTH)
             plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
-            plt.title(f"Figure 1: {cn_name}\nLongitudinal Trajectory by Disease Groups",
+            plt.title(f"Figure 1: {scale} Longitudinal Trajectory by Disease Groups",
                       fontsize=FONT_TITLE)
             plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
             plt.savefig(os.path.join(scale_dir, "Fig1_Group_Progression.png"), dpi=DPI)
@@ -146,7 +144,7 @@ def run_extended_pipeline():
                          marker='s', markersize=MARKERSIZE,
                          errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK)
             plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
-            plt.title(f"Figure 2: {cn_name}\nProgression Predicted by Baseline MIND",
+            plt.title(f"Figure 2: {scale}\nProgression Predicted by Baseline MIND",
                       fontsize=FONT_TITLE)
             plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
             plt.savefig(os.path.join(scale_dir, "Fig2_MIND_Prediction.png"), dpi=DPI)
@@ -179,6 +177,42 @@ def run_extended_pipeline():
             mdf_ols = smf.ols(formula2, data=df_clean).fit()
             with open(os.path.join(scale_dir, "OLS_Backup_Report.txt"), 'w') as f:
                 f.write(mdf_ols.summary().as_text())
+
+            # OLS 保底也画图（与 LME 分支一致）
+            df_clean['Fitted_G'] = mdf_ols.predict(df_clean)
+            plt.figure(figsize=FIG_SINGLE)
+            sns.lineplot(data=df_clean, x='Time', y='Fitted_G',
+                         hue='Group_MIND', hue_order=GROUP_ORDER,
+                         palette=GROUP_PALETTE,
+                         marker=MARKER, markersize=MARKERSIZE,
+                         errorbar=ERRORBAR, linewidth=LINEWIDTH)
+            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            plt.title(f"Figure 1: {scale} Longitudinal Trajectory by Disease Groups",
+                      fontsize=FONT_TITLE)
+            plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
+            plt.savefig(os.path.join(scale_dir, "Fig1_Group_Progression.png"), dpi=DPI)
+            plt.close()
+
+            m_val, s_val = df_clean['MIND_BL'].mean(), df_clean['MIND_BL'].std()
+            df_viz = df_clean.copy()
+            df_viz['Fitted_M'] = mdf_ols.predict(df_viz)
+            df_viz['MIND_Level'] = np.where(
+                df_viz['MIND_BL'] > m_val + s_val, MIND_LEVEL_ORDER[0],
+                np.where(df_viz['MIND_BL'] < m_val - s_val, MIND_LEVEL_ORDER[2],
+                         MIND_LEVEL_ORDER[1])
+            )
+            plt.figure(figsize=FIG_SINGLE)
+            sns.lineplot(data=df_viz, x='Time', y='Fitted_M',
+                         hue='MIND_Level', hue_order=MIND_LEVEL_ORDER,
+                         palette=CMAP_TRAJECTORY,
+                         marker='s', markersize=MARKERSIZE,
+                         errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK)
+            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            plt.title(f"Figure 2: {scale} Progression Predicted by Baseline MIND",
+                      fontsize=FONT_TITLE)
+            plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
+            plt.savefig(os.path.join(scale_dir, "Fig2_MIND_Prediction.png"), dpi=DPI)
+            plt.close()
 
     print(f"\n>>> 5个新量表分析完成！结果存放至: {BASE_OUTPUT_DIR}")
 

@@ -1,6 +1,6 @@
 # MIND Pipeline — Session Progress Notes
 
-> 最近更新：2026-03-27
+> 最近更新：2026-03-28
 > 用途：跨会话工作记忆，记录当前代码状态、已完成工作和待办事项
 
 ---
@@ -23,7 +23,7 @@
 | `step1_` | 平均空间分布脑图 |
 | `step2a/b/c/d_` | 组间统计差异（global → 7网络 → 节点 → 连边） |
 | `step2_stats_` | 纯统计文件（无可视化） |
-| `step3_` / `step3c_` / `step3d_` | LME 纵向预测 / 多量表 / 基线回归 |
+| `step3_` / `step3c_` / `step3d_` / `step3e_` | LME 纵向预测 / 多量表 / 基线回归 / 非运动扩展量表 |
 | `utils_` | 辅助工具 |
 | `config.py` | 全局参数中心 |
 
@@ -40,7 +40,7 @@
 
 ## LME 分析设计（research_design_lme_mind.md）
 
-### 双模型结构（step3_lme_updrs.py & step3c_lme_2year_multiscale.py 均已实现）
+### 双模型结构（step3_lme_updrs.py / step3c / step3e 均已实现）
 
 ```python
 # 模型1：四组轨迹差异（参照组 HC）
@@ -76,6 +76,18 @@ LME_RE_FORMULA = "~Time"   # 等价 R 的 (1 + Time | Subject_ID)
 | RBDSQ_all | −11.1 | 0.093 |
 | NP1APAT | +7.4 | 0.014 ✓ |
 | NP1FATG | −13.6 | <0.001 ✓ |
+
+### step3e 扩展非运动量表（2026-03-28 跑通）
+
+`step3e_lme_nonmotor_extended.py`：5 个新量表，含 `_safe_col()` 处理特殊字符（S-AI/T-AI 含 `-`）
+
+| 量表 | Time:MIND_BL β | 95% CI | p | 备注 |
+|---|---|---|---|---|
+| ESS_all（嗜睡） | +5.4 | [−9.1, 19.9] | 0.464 | 不显著 |
+| SCOPA_AUT_all（自主神经） | −5.7 | [−60.4, 49.0] | 0.839 | 不显著 |
+| S-AI（状态焦虑） | +88.9 | [26.3, 151.5] | 0.005 ✓ | 显著 |
+| T-AI（特质焦虑） | +90.4 | [32.9, 147.8] | 0.002 ✓ | 显著 |
+| UPSIT_PRCNTGE（嗅觉） | — | — | — | LME 全部失败，OLS 保底（β=100.9, p=0.036） |
 
 ---
 

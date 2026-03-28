@@ -187,6 +187,24 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 
 ---
 
+## 六-扩展2：非运动精神症状量表（step3e）
+
+**答：已在 `step3e_lme_nonmotor_extended.py` 中处理。**
+
+5 个新量表，含 `_safe_col()` 处理特殊字符（S-AI/T-AI 含 `-`，patsy 需 `Q()` 包裹）：
+
+| 量表 | 临床意义 | Time:MIND_BL β | p |
+|---|---|---|---|
+| `ESS_all` | 嗜睡（Epworth Sleepiness Scale） | +5.4 | 0.464 |
+| `SCOPA_AUT_all` | 自主神经障碍（SCOPA-AUT） | −5.7 | 0.839 |
+| `S-AI` | 状态焦虑（State Anxiety Inventory） | +88.9 | 0.005 ✓ |
+| `T-AI` | 特质焦虑（Trait Anxiety Inventory） | +90.4 | 0.002 ✓ |
+| `UPSIT_PRCNTGE` | 嗅觉功能（UPSIT 百分比） | — | OLS 保底 |
+
+> **UPSIT 特殊情况**：绝大多数数据集中在 BL（V04 仅 21 人、V06 仅 33 人），LME 随机斜率和随机截距均无法收敛，最终 OLS 保底。
+
+---
+
 ## 七、实现进度（对应 step3 脚本）
 
 - [x] `step3c_lme_2year_multiscale.py`：加入 `re_formula=LME_RE_FORMULA`（三级降级，来自 config.py）
@@ -194,6 +212,7 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 - [x] `step3c_lme_2year_multiscale.py`：简单斜率（Time:MIND_BL β/SE/95%CI/p）输出到 Statistical_Summary.txt
 - [x] `step3_lme_updrs.py`：重构为双模型结构，补充 `C(Group_MIND)` 消除疾病阶段混淆
 - [x] `config.py` 新增 `LME_RE_FORMULA = "~Time"` 和 `LME_METHODS`
+- [x] `step3e_lme_nonmotor_extended.py`：5 个非运动/精神症状量表，含 `_safe_col()` 处理特殊字符
 
 ## 八、仍待确认
 

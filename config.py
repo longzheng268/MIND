@@ -122,9 +122,13 @@ def apply_style():
     """统一应用 matplotlib/seaborn 视觉主题，每个脚本调用一次即可。"""
     sns.set_theme(style='ticks', font_scale=1.1)
     plt.rcParams.update({
-        'figure.dpi':        DPI,
+        'figure.dpi':        100,
         'savefig.dpi':       DPI,
         'savefig.bbox':      'tight',
+        'figure.figsize':    (8, 6),
+        'figure.max_open_warning': 0,
         'axes.spines.top':   False,
         'axes.spines.right': False,
     })
+    plt.ioff()
+

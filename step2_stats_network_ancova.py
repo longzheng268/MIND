@@ -3,7 +3,7 @@ import numpy as np
 import pingouin as pg
 
 # 1. 加载数据
-df = pd.read_csv('./MIND_Detailed_Network_Analysis.csv')
+df = pd.read_csv('./scale/MIND_baseline_with_followup_V04_V12.csv')
 
 # --- 自动列名修正 ---
 # 检查是否存在 Age 相关的列

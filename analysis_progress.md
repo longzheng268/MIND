@@ -1,6 +1,6 @@
 # MIND Analysis — Progress Tracker
 
-> Last updated: 2026-03-27
+> Last updated: 2026-03-28
 
 ---
 
@@ -111,16 +111,49 @@ Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
 |---|---|---|
 | `step3c_lme_2year_multiscale.py` | ✅ Ready (standalone) | 6-scale LME per `./MIND_Research_Results/{scale}/` |
 | `step3d_baseline_regression.py` | ✅ Ready (standalone) | Baseline regression prediction |
+| `step3e_lme_nonmotor_extended.py` | ✅ Ready (standalone) | 5 新量表 LME（ESS/SCOPA/S-AI/T-AI/UPSIT） |
+| `step3f_saa_subgroup_analysis.py` | ✅ Ready (standalone) | SAA 亚组：BL MIND ANCOVA + SAA 调节 LME |
 
 > ⚠️  `step3c_lme_2year_multiscale.py` still references `./量表/` — update to `./scale/`
 
 ---
 
-## Step 4 — ML Prediction Model
+## Step 4 — ML Prediction Model（Aim 3）
 
-| Script | Status | Notes |
+**目标**：在 Parkinson 连续谱中，评估 MIND 网络指标在 baseline clinical 和 SAA 之上的增量预测价值。
+
+**推荐方案**（来自研究方案 4.4.13）：
+- 主要结局：24 个月运动进展（UPDRS III 年化变化率）+ 24-36 个月认知进展（MoCA 年化变化率）
+- 主模型：Elastic Net（连续 + 二分类），挑战模型：XGBoost
+- 验证：nested cross-validation（外层 5-fold + 内层 5-fold）+ 独立测试集
+- 模型层级：Model A (clinical) → B (+SAA) → C (+MIND) → D (+SAA+MIND) → E (+传统MRI) → F (全模态)
+
+**当前数据可行性**（2026-03-31）：
+
+| 指标 | 状态 | 说明 |
 |---|---|---|
-| *(none yet)* | ❌ Not started | See `todolist.md` for scope |
+| BL+V06 配对 | 44 人 | prodromal_SAA-: 29, prodromal_SAA+: 6, PD_SAA+: 6 |
+| BL+V04 配对 | 41 人 | — |
+| ≥2 时间点 MoCA | 85 人 | prodromal_SAA-: 48, prodromal_SAA+: 9, PD_SAA+: 17 |
+| ≥3 时间点 MoCA | 4 人 | 无法提取 LME slope |
+| SAA kinetic 参数 | ❌ 无 | 仅 SAA_Status（二元） |
+| 传统结构 MRI | ❌ 无 | data/ 仅含 MIND 矩阵，无 TIV/皮层厚度/灰质体积 |
+| MIND 矩阵纵向 | ❌ 仅 BL | V04/V06 的 MIND 指标全缺失 |
+| MIND 网络特征 | 8 维 | 全局 + 7 网络 |
+
+**可行性评估**：
+- **可做**：Elastic Net / XGBoost 预测 Δ（BL→V06），n=44，11 维特征（8 MIND + 3 人口学）
+- **限制**：样本量极小（n=44），无法做完整 nested CV；SAA 亚组内 n=6，无法做有意义的分组预测
+- **缺失**：Model E/F（传统 MRI 比较）不可行；SAA kinetic 探索不可行；Cox 生存模型不可行（事件数不足）
+- **建议**：当前可先做简化版 Δ 预测 + 特征重要性，待后续数据补充后再扩展完整方案
+
+**当前计划**：
+- [ ] `step4_ml_prediction.py`：简化版 Δ 预测（Elastic Net / XGBoost），仅用现有 11 维特征
+- [ ] 待补充：传统结构 MRI 数据、SAA kinetic 参数、更多纵向配对数据
+
+| Script | Status | Outputs |
+|---|---|---|
+| `step4_ml/step4_ml_prediction.py` | ✅ 已创建 | SAA 亚组 Δ 预测（回归 + 分类） |
 
 ---
 

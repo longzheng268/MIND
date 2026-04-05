@@ -8,7 +8,7 @@ from config import *
 apply_style()
 
 # --- 1. 配置与路径 ---
-DATA_FILE = './MIND_Longitudinal_Clean_Data.csv'
+DATA_FILE = 'scale/MIND_baseline_with_followup_V04_V12.csv'
 MIND_ROOT = './data/MIND-Networks_newgroup/'
 OUTPUT_DIR = './analysis_results_means/'
 os.makedirs(OUTPUT_DIR, exist_ok=True)

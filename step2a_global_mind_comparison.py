@@ -13,7 +13,7 @@ from config import *
 apply_style()
 
 # --- 1. 配置 ---
-DATA_FILE = './MIND_Longitudinal_Clean_Data.csv'
+DATA_FILE = './scale/MIND_baseline_with_followup_V04_V12.csv'
 MIND_ROOT = './data/MIND-Networks_newgroup/'
 OUTPUT_DIR = './analysis_results_professional/'
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -110,7 +110,7 @@ def run_pipeline():
     plt.savefig(os.path.join(OUTPUT_DIR, "Global_Boxplot.png"), dpi=DPI)
 
     print(">>> [4/5] 执行统计分析并绘制解剖脑热力图...")
-    for g1, g2 in combinations(GROUPS, 2):
+    for g1, g2 in combinations(GROUP_ORDER, 2):
         print(f"    正在处理: {g1} vs {g2}")
         mask = df_final['Group_MIND'].isin([g1, g2])
         pair_df = df_final[mask].copy()
@@ -143,7 +143,7 @@ def run_pipeline():
 
     print(f"\n>>> 任务全部完成！所有图像保存在 {OUTPUT_DIR}")
     print(">>> 正在一次性弹出所有窗口...")
-    plt.show() # 在最后调用，一次性显示所有生成的图
+    plt.show(block=True) # 在最后调用，一次性显示所有生成的图
 
 if __name__ == "__main__":
     run_pipeline()

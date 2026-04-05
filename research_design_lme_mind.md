@@ -213,6 +213,7 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 - [x] `step3_lme_updrs.py`：重构为双模型结构，补充 `C(Group_MIND)` 消除疾病阶段混淆
 - [x] `config.py` 新增 `LME_RE_FORMULA = "~Time"` 和 `LME_METHODS`
 - [x] `step3e_lme_nonmotor_extended.py`：5 个非运动/精神症状量表，含 `_safe_col()` 处理特殊字符
+- [x] `step3f_saa_subgroup_analysis.py`：SAA 亚组敏感性——BL MIND 组间差异（ANCOVA）+ SAA 对临床变化速率的调节（LME）
 
 ## 八、仍待确认
 

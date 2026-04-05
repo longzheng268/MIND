@@ -1,6 +1,6 @@
 # MIND 分析待办清单
 
-> 更新时间：2026-03-27
+> 更新时间：2026-03-28
 
 ---
 
@@ -19,7 +19,7 @@
 - [ ] `step2c_nodal_strength_ancova.py`：运行并验证输出（含 3D 脑表面图）
 - [ ] `step2d_edgewise_analysis.py`：四组 ANCOVA 耗时极长，考虑并行化（joblib）
 - [ ] NBS（Network-Based Statistics）替代简单 T 检验，用于 edgewise 多重比较校正
-- [ ] SAA 阴/阳性亚组的敏感性分析
+- [x] `step3f_saa_subgroup_analysis.py`：SAA+ vs SAA- BL MIND 组间差异 + SAA 对临床变化速率的调节（2026-03-28）
 
 ## 可视化补充
 

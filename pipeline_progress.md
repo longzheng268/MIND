@@ -23,7 +23,7 @@
 | `step1_` | 平均空间分布脑图 |
 | `step2a/b/c/d_` | 组间统计差异（global → 7网络 → 节点 → 连边） |
 | `step2_stats_` | 纯统计文件（无可视化） |
-| `step3_` / `step3c_` / `step3d_` / `step3e_` | LME 纵向预测 / 多量表 / 基线回归 / 非运动扩展量表 |
+| `step3_` / `step3c_` / `step3d_` / `step3e_` / `step3f_` | LME 纵向预测 / 多量表 / 基线回归 / 非运动扩展量表 / SAA 亚组敏感性 |
 | `utils_` | 辅助工具 |
 | `config.py` | 全局参数中心 |
 

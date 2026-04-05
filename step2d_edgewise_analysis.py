@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,9 +15,10 @@ from config import *
 apply_style()
 
 # --- 配置路径 ---
-DATA_FILE  = './MIND_Longitudinal_Clean_Data.csv'
-MIND_ROOT  = './data/MIND-Networks_newgroup/'
-OUTPUT_DIR = './edgewise_results/'
+BASE_DIR   = Path(__file__).resolve().parent
+DATA_FILE  = BASE_DIR / 'scale' / 'MIND_baseline_with_followup_V04_V12.csv'
+MIND_ROOT  = BASE_DIR / 'data' / 'MIND-Networks_newgroup'
+OUTPUT_DIR = BASE_DIR / 'edgewise_results'
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # 上三角索引（k=1 不含对角线，共 2278 条边）
@@ -36,6 +38,8 @@ def load_all_data():
       - 模块内 / 模块间平均连接强度 (N, 14*7)
     """
     print(">>> 正在加载矩阵并计算多层网络指标（含 Betweenness，耗时较长）...")
+    if not DATA_FILE.exists():
+        raise FileNotFoundError(f"未找到数据文件: {DATA_FILE}")
     df    = pd.read_csv(DATA_FILE)
     df_bl = df[df['EVENT_ID'] == 'BL'].copy()
 

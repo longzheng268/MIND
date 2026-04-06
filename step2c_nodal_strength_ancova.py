@@ -14,7 +14,7 @@ from config import *
 apply_style()
 
 # --- 配置 ---
-DATA_FILE = './MIND_Longitudinal_Clean_Data.csv'
+DATA_FILE = './scale/MIND_baseline_with_followup_V04_V12.csv'
 MIND_ROOT = './data/MIND-Networks_newgroup/'
 OUTPUT_DIR = './nodal_statistical_results/'
 os.makedirs(OUTPUT_DIR, exist_ok=True)

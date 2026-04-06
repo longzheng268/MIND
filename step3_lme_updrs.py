@@ -17,9 +17,16 @@ apply_style()
 #   - 优化器列表与随机效应公式统一由 config.py 控制
 
 # --- 路径配置 ---
-DATA_FILE = './MIND_Longitudinal_Clean_Data.csv'
+DATA_FILE = './scale/MIND_baseline_with_followup_V04_V12.csv'
 OUTPUT_DIR = './lme_updrs_results/'
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+
+def _get_updrs3_col(df):
+    for col in ['UPDRS3', 'UPDRSIII', 'UPDRSIII.1']:
+        if col in df.columns:
+            return col
+    raise KeyError("未找到 UPDRS3/UPDRSIII 列")
 
 
 def _fit_lme(formula, data, groups_col):
@@ -57,18 +64,20 @@ def run_full_timepoints():
     print("═" * 60)
 
     df = pd.read_csv(DATA_FILE)
+    updrs_col = _get_updrs3_col(df)
     df['EVENT_ID_Clean'] = df['EVENT_ID'].str.extract(r'(BL|V\d+)', expand=False)
     df['Time'] = df['EVENT_ID_Clean'].map(TIME_MAP_FULL)
 
     df_bl = (df[df['EVENT_ID_Clean'] == 'BL']
-             [['Original_SUB_ID', 'MIND_Sig_Index', 'UPDRS3']]
+             [['Original_SUB_ID', 'MIND_Sig_Index', updrs_col]]
              .copy())
     df_bl.columns = ['Original_SUB_ID', 'MIND_BL', 'UPDRS3_BL']
 
     df_long = pd.merge(df, df_bl, on='Original_SUB_ID', how='inner')
-    cols = ['UPDRS3', 'Time', 'MIND_BL', 'UPDRS3_BL',
+    cols = [updrs_col, 'Time', 'MIND_BL', 'UPDRS3_BL',
             'Age_at_Visit', 'Education', 'Group_MIND']
     df_long = df_long.dropna(subset=cols).reset_index(drop=True)
+    df_long['UPDRS3'] = df_long[updrs_col]
     df_long['Group_MIND'] = pd.Categorical(
         df_long['Group_MIND'], categories=GROUP_ORDER, ordered=True
     )
@@ -142,18 +151,20 @@ def run_2year_fixed():
     print("═" * 60)
 
     df = pd.read_csv(DATA_FILE)
+    updrs_col = _get_updrs3_col(df)
     df['EVENT_ID_Clean'] = df['EVENT_ID'].str.extract(r'(BL|V04|V06)', expand=False)
     df['Time'] = df['EVENT_ID_Clean'].map(TIME_MAP_3PT)
 
     df_bl = (df[df['EVENT_ID_Clean'] == 'BL']
-             [['Original_SUB_ID', 'MIND_Sig_Index', 'UPDRS3']]
+             [['Original_SUB_ID', 'MIND_Sig_Index', updrs_col]]
              .copy())
     df_bl.columns = ['Original_SUB_ID', 'MIND_BL', 'UPDRS3_BL']
 
     df_long = pd.merge(df, df_bl, on='Original_SUB_ID', how='inner')
-    cols = ['Time', 'UPDRS3', 'MIND_BL', 'UPDRS3_BL',
+    cols = ['Time', updrs_col, 'MIND_BL', 'UPDRS3_BL',
             'Age_at_Visit', 'Sex', 'Education', 'Group_MIND']
     df_long = df_long.dropna(subset=cols).reset_index(drop=True)
+    df_long['UPDRS3'] = df_long[updrs_col]
     df_long['Group_MIND'] = pd.Categorical(
         df_long['Group_MIND'], categories=GROUP_ORDER, ordered=True
     )

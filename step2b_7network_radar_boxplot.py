@@ -8,7 +8,7 @@ from config import *
 apply_style()
 
 # 1. 加载数据
-df = pd.read_csv('./MIND_Detailed_Network_Analysis.csv')
+df = pd.read_csv('./scale/MIND_baseline_with_followup_V04_V12.csv')
 
 # 2. 分组与网络定义从 config 统一导入
 net_cols = [f'MIND_{n}' for n in NETWORKS]

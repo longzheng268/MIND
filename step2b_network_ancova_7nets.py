@@ -7,7 +7,7 @@ from nilearn import plotting, datasets
 from config import *
 
 # 1. 读取并筛选基线数据
-df = pd.read_csv('./MIND_Longitudinal_Clean_Data.csv')
+df = pd.read_csv('./scale/MIND_baseline_with_followup_V04_V12.csv')
 df_bl = df[df['EVENT_ID'] == 'BL'].copy()
 
 # 2. 定义分析目标 (7大子网)

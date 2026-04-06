@@ -1,6 +1,6 @@
 # MIND Analysis — Progress Tracker
 
-> Last updated: 2026-03-28
+> Last updated: 2026-04-07
 
 ---
 
@@ -10,6 +10,16 @@
 Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
  [✓]           [✓]              [✓]            [✓]          [ ]
 ```
+
+---
+
+## Recent fixes and current recommendation
+
+- `step2a_global_mind_comparison.py` has been fixed for the `GROUP_ORDER` bug and now uses blocking display (`plt.show(block=True)`).
+- `config.py` now uses `plt.ioff()` and a smaller default preview window while preserving `savefig.dpi=300`.
+- `step2d_edgewise_analysis.py` runs successfully in the `mind` environment after the data path fix.
+- `step2b_network_ancova_7nets.py` is the current recommended Step 2b inference script for four-group baseline MIND network differences.
+- `step2b_connectome_viz.py` is kept only as a legacy visualization script and should not be treated as the primary inference path.
 
 ---
 
@@ -27,6 +37,11 @@ Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
 |---|---|---|
 | `step2a_global_mind_comparison.py` | ✅ Ready | Radar, boxplot, brain surface T-map, connectome |
 
+**Validated fixes (2026-04-07):**
+- `GROUPS` → `GROUP_ORDER`
+- blocking `plt.show(block=True)` restored
+- display behavior unified through `config.py`
+
 ---
 
 ## Step 2b — 7-Network Level
@@ -35,7 +50,21 @@ Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
 |---|---|---|
 | `step2b_7network_radar_boxplot.py` | ✅ Ready | Radar chart + side-by-side boxplots |
 | `step2b_network_ancova_7nets.py` | ✅ Ready | 7-network ANCOVA inference stats |
-| `step2b_connectome_viz.py` | ✅ Ready | nilearn connectome visualization |
+| `step2b_connectome_viz.py` | ⚠️ Legacy | Old nilearn connectome visualization |
+
+**Current recommended result source:**
+- Use `step2b_network_ancova_7nets.py` as the main Step 2b result for reporting.
+- Latest observed ANCOVA + FDR results:
+
+| Network | p_uncorrected | p_fdr |
+|---|---:|---:|
+| MIND_Visual | 0.000418 | 0.000975 |
+| MIND_Somatomotor | 0.805643 | 0.805643 |
+| MIND_Dorsal_Attention | 0.027740 | 0.032364 |
+| MIND_Ventral_Attention | 0.019777 | 0.027688 |
+| MIND_Limbic | 0.000557 | 0.000975 |
+| MIND_Frontoparietal | 0.000155 | 0.000764 |
+| MIND_Default | 0.000218 | 0.000764 |
 
 ---
 

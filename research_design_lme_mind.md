@@ -217,6 +217,8 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 
 ## 八、仍待确认
 
-- [ ] `step3d_baseline_regression.py`：读取 `MIND_Final_Analysis_Table.csv`（宽格式），该文件路径未知，字段名与其他脚本不同，需确认
+- [x] `step3d_baseline_regression.py`：已不再依赖 `MIND_Final_Analysis_Table.csv` 宽表，当前改为直接读取 `./scale/MIND_baseline_with_followup_V04_V12.csv` 长表并动态整理基线/随访回归输入（2026-04-09）
+- [x] `step3d_baseline_regression.py`：当前主输出聚焦 `V10` 与 `V12` 两组图片，并恢复每组 Figure 1 / Figure 2 成对结果（2026-04-09）
+- [x] `step3d_baseline_regression.py`：Aim 3 已加入退化样本保护；当非 HC 子样本过少时自动跳过，避免 `R²=1.0000` 假完美结果（2026-04-09）
 - [ ] 多量表 FDR 校正（BH 法）：step3c 当前无跨量表 FDR，若论文需要需补充
 - [ ] 事后组间斜率两两比较（emtrends 等价 Python 实现）：当前仅报告 Time:MIND_BL 整体系数

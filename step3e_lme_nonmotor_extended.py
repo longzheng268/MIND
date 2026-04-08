@@ -14,7 +14,7 @@ apply_style()
 # 其中 S-AI / T-AI 含特殊字符（-），patsy 需用 Q() 包裹
 # 临床意义：帕金森病非运动症状 & 精神症状评估
 
-DATA_FILE       = './scale/MIND_Longitudinal_Clean_Data_filled.csv'
+DATA_FILE       = './scale/MIND_baseline_with_followup_V04_V12.csv'
 BASE_OUTPUT_DIR = './MIND_Research_Results/'
 SCALES = ['ESS_all', 'SCOPA_AUT_all', 'S-AI', 'T-AI', 'UPSIT_PRCNTGE']
 
@@ -60,14 +60,10 @@ def run_extended_pipeline():
         print(f"找不到文件: {DATA_FILE}")
         return
 
-    df_raw = pd.read_csv(DATA_FILE)
-
-    # 时间点清洗与映射（TIME_MAP_3PT 来自 config.py）
-    df_raw['EVENT_ID_Clean'] = df_raw['EVENT_ID'].str.extract(r'(BL|V04|V06)', expand=False)
-    df_raw['Time'] = df_raw['EVENT_ID_Clean'].map(TIME_MAP_3PT)
+    df_raw = add_time_from_event(pd.read_csv(DATA_FILE), TIME_MAP_3PT)
 
     # 提取基线 MIND 指标
-    df_bl_mind = (df_raw[df_raw['EVENT_ID_Clean'] == 'BL']
+    df_bl_mind = (df_raw[df_raw['EVENT_ID_Clean'] == BL_EVENT]
                   [['Original_SUB_ID', 'MIND_Sig_Index']]
                   .copy())
     df_bl_mind.columns = ['Original_SUB_ID', 'MIND_BL']
@@ -80,7 +76,7 @@ def run_extended_pipeline():
         os.makedirs(scale_dir, exist_ok=True)
 
         # 合并基线评分作为协变量（控制基线起点差异）
-        df_bl_score = (df_raw[df_raw['EVENT_ID_Clean'] == 'BL']
+        df_bl_score = (df_raw[df_raw['EVENT_ID_Clean'] == BL_EVENT]
                        [['Original_SUB_ID', scale]]
                        .copy())
         df_bl_score.columns = ['Original_SUB_ID', f'{scale}_BL']
@@ -121,7 +117,8 @@ def run_extended_pipeline():
                          palette=GROUP_PALETTE,
                          marker=MARKER, markersize=MARKERSIZE,
                          errorbar=ERRORBAR, linewidth=LINEWIDTH)
-            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
+            plt.xticks(ticks_3pt, labels_3pt)
             plt.title(f"Figure 1: {scale} Longitudinal Trajectory by Disease Groups",
                       fontsize=FONT_TITLE)
             plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
@@ -143,7 +140,8 @@ def run_extended_pipeline():
                          palette=CMAP_TRAJECTORY,
                          marker='s', markersize=MARKERSIZE,
                          errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK)
-            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
+            plt.xticks(ticks_3pt, labels_3pt)
             plt.title(f"Figure 2: {scale}\nProgression Predicted by Baseline MIND",
                       fontsize=FONT_TITLE)
             plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
@@ -186,7 +184,8 @@ def run_extended_pipeline():
                          palette=GROUP_PALETTE,
                          marker=MARKER, markersize=MARKERSIZE,
                          errorbar=ERRORBAR, linewidth=LINEWIDTH)
-            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
+            plt.xticks(ticks_3pt, labels_3pt)
             plt.title(f"Figure 1: {scale} Longitudinal Trajectory by Disease Groups",
                       fontsize=FONT_TITLE)
             plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
@@ -207,7 +206,8 @@ def run_extended_pipeline():
                          palette=CMAP_TRAJECTORY,
                          marker='s', markersize=MARKERSIZE,
                          errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK)
-            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
+            plt.xticks(ticks_3pt, labels_3pt)
             plt.title(f"Figure 2: {scale} Progression Predicted by Baseline MIND",
                       fontsize=FONT_TITLE)
             plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)

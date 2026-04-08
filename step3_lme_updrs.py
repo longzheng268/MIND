@@ -19,6 +19,7 @@ apply_style()
 # --- 路径配置 ---
 DATA_FILE = './scale/MIND_baseline_with_followup_V04_V12.csv'
 OUTPUT_DIR = './lme_updrs_results/'
+MIN_FULL_PLOT_N = 100
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
@@ -55,7 +56,7 @@ def _fit_lme(formula, data, groups_col):
 # ─────────────────────────────────────────────
 def run_full_timepoints():
     """
-    使用 TIME_MAP_FULL（BL/V02/.../V12）拟合双模型：
+    使用 TIME_MAP_FULL（BL/V04/.../V12）拟合双模型：
       模型1：检验四组间 UPDRS-III 纵向轨迹差异
       模型2：控制分组后，基线 MIND 对 UPDRS-III 变化速率的独立预测
     """
@@ -63,12 +64,10 @@ def run_full_timepoints():
     print(">>> 模型 A：全时间点 LME（BL ~ V12）")
     print("═" * 60)
 
-    df = pd.read_csv(DATA_FILE)
+    df = add_time_from_event(pd.read_csv(DATA_FILE), TIME_MAP_FULL)
     updrs_col = _get_updrs3_col(df)
-    df['EVENT_ID_Clean'] = df['EVENT_ID'].str.extract(r'(BL|V\d+)', expand=False)
-    df['Time'] = df['EVENT_ID_Clean'].map(TIME_MAP_FULL)
 
-    df_bl = (df[df['EVENT_ID_Clean'] == 'BL']
+    df_bl = (df[df['EVENT_ID_Clean'] == BL_EVENT]
              [['Original_SUB_ID', 'MIND_Sig_Index', updrs_col]]
              .copy())
     df_bl.columns = ['Original_SUB_ID', 'MIND_BL', 'UPDRS3_BL']
@@ -105,6 +104,14 @@ def run_full_timepoints():
     # 可视化：用模型2预测值，按 MIND 均值±1SD 分三组
     id_counts = df_long.groupby('Group_ID')['Time'].transform('count')
     df_viz = df_long[id_counts >= 2].copy()
+    visit_counts = df_viz['EVENT_ID_Clean'].value_counts()
+    kept_events = [event for event in TIMEPOINTS_FULL if visit_counts.get(event, 0) >= MIN_FULL_PLOT_N]
+    if kept_events != TIMEPOINTS_FULL:
+        dropped = [event for event in TIMEPOINTS_FULL if event not in kept_events]
+        print(f"    [A] 可视化最小样本阈值={MIN_FULL_PLOT_N}，不绘制: {dropped}")
+    kept_map = {event: TIME_MAP_FULL[event] for event in kept_events}
+    kept_labels = [TIME_LABELS_FULL[TIMEPOINTS_FULL.index(event)] for event in kept_events]
+    df_viz = df_viz[df_viz['EVENT_ID_Clean'].isin(kept_events)].copy()
     df_viz['Fitted_UPDRS'] = mdf2.predict(df_viz)
     m_val, s_val = df_viz['MIND_BL'].mean(), df_viz['MIND_BL'].std()
     df_viz['MIND_Level'] = pd.cut(
@@ -118,10 +125,10 @@ def run_full_timepoints():
                  hue='MIND_Level', hue_order=MIND_LEVEL_ORDER,
                  palette=CMAP_TRAJECTORY,
                  marker=MARKER, errorbar=ERRORBAR, linewidth=LINEWIDTH)
-    plt.xticks([0, 1, 2, 3, 4],
-               ['BL', 'Y1(V04)', 'Y2(V06)', 'Y3(V08)', 'Y4(V10)'])
+    ticks_full, labels_full = get_time_ticks_and_labels(kept_map, kept_labels)
+    plt.xticks(ticks_full, labels_full, rotation=30)
     plt.title("UPDRS-III Progressive Trajectory by Baseline MIND"
-              "\n(Full Timepoints, LME Model 2 Fitted Values)")
+              f"\n({TIME_WINDOW_FULL_TITLE}, LME Model 2 Fitted Values)")
     plt.ylabel("Predicted UPDRS-III Score (↑ = Worse Motor Function)")
     plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
     plt.savefig(os.path.join(OUTPUT_DIR, "ModelA_Full_TP_Trajectory.png"), dpi=DPI)
@@ -150,12 +157,10 @@ def run_2year_fixed():
     print(">>> 模型 B：2年固定随访 LME（BL / V04 / V06）")
     print("═" * 60)
 
-    df = pd.read_csv(DATA_FILE)
+    df = add_time_from_event(pd.read_csv(DATA_FILE), TIME_MAP_3PT)
     updrs_col = _get_updrs3_col(df)
-    df['EVENT_ID_Clean'] = df['EVENT_ID'].str.extract(r'(BL|V04|V06)', expand=False)
-    df['Time'] = df['EVENT_ID_Clean'].map(TIME_MAP_3PT)
 
-    df_bl = (df[df['EVENT_ID_Clean'] == 'BL']
+    df_bl = (df[df['EVENT_ID_Clean'] == BL_EVENT]
              [['Original_SUB_ID', 'MIND_Sig_Index', updrs_col]]
              .copy())
     df_bl.columns = ['Original_SUB_ID', 'MIND_BL', 'UPDRS3_BL']
@@ -213,9 +218,10 @@ def run_2year_fixed():
                  palette=CMAP_TRAJECTORY,
                  marker=MARKER, markersize=MARKERSIZE_LG,
                  errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK)
-    plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+    ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
+    plt.xticks(ticks_3pt, labels_3pt)
     plt.title("MIND Baseline Predicting 2-Year UPDRS-III Progression"
-              "\n(LME Model 2, BL/V04/V06 Fixed Timepoints)")
+              f"\n(LME Model 2, {TIME_WINDOW_3PT_LABEL} {TIME_WINDOW_3PT_TITLE})")
     plt.xlabel("Years from Baseline")
     plt.ylabel("Predicted UPDRS-III Score (↑ = Worse Motor Function)")
     plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)

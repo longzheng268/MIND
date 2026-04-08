@@ -24,7 +24,7 @@ apply_style()
 # 输入特征：8 维 MIND 网络指标 + 3 维人口学变量 = 11 维
 # 仅 SAA+ 和 SAA-（prodromal 亚组）
 
-DATA_FILE       = './scale/MIND_Longitudinal_Clean_Data_filled.csv'
+DATA_FILE       = './scale/MIND_baseline_with_followup_V04_V12.csv'
 BASE_OUTPUT_DIR = './MIND_Research_Results/ML_Prediction/'
 
 # 网络级别特征列
@@ -55,12 +55,23 @@ FEAT_SHORT = {
 N_SPLITS = 5
 N_REPEATS = 3
 RANDOM_STATE = 42
+SCALE_COLUMN_ALIASES = {
+    'MoCA': ['MoCA'],
+    'UPDRS3': ['UPDRS3', 'UPDRSIII', 'UPDRSIII.1'],
+}
+
+
+def _get_scale_col(df, scale):
+    for col in SCALE_COLUMN_ALIASES.get(scale, [scale]):
+        if col in df.columns:
+            return col
+    raise KeyError(f"未找到量表列: {scale}")
 
 
 def _load_bl_features():
     """加载 BL 时间点的特征数据（仅 SAA+ 和 SAA-）。"""
     df = pd.read_csv(DATA_FILE)
-    df_bl = df[df['EVENT_ID'] == 'BL'].copy()
+    df_bl = df[df['EVENT_ID'] == BL_EVENT].copy()
     df_bl = df_bl[df_bl['SAA_Status'].isin(['Positive', 'Negative'])].copy()
     df_bl['SAA_Status'] = pd.Categorical(
         df_bl['SAA_Status'], categories=['Negative', 'Positive'], ordered=True
@@ -70,14 +81,15 @@ def _load_bl_features():
 
 def _get_delta(df, scale, subjects):
     """计算受试者从 BL 到 V06 的评分变化量（Δ = V06 - BL）。"""
-    df[scale] = pd.to_numeric(df[scale], errors='coerce')
+    scale_col = _get_scale_col(df, scale)
+    df[scale_col] = pd.to_numeric(df[scale_col], errors='coerce')
     df_clean = df[df['Original_SUB_ID'].isin(subjects)].copy()
 
-    bl = df_clean[df_clean['EVENT_ID'] == 'BL'][['Original_SUB_ID', scale]].copy()
+    bl = df_clean[df_clean['EVENT_ID'] == BL_EVENT][['Original_SUB_ID', scale_col]].copy()
     bl.columns = ['Original_SUB_ID', 'BL_score']
     bl = bl.drop_duplicates(subset='Original_SUB_ID', keep='first')
 
-    v06 = df_clean[df_clean['EVENT_ID'] == 'V06'][['Original_SUB_ID', scale]].copy()
+    v06 = df_clean[df_clean['EVENT_ID'] == FOLLOWUP_EVENT_2Y][['Original_SUB_ID', scale_col]].copy()
     v06.columns = ['Original_SUB_ID', 'V06_score']
     v06 = v06.drop_duplicates(subset='Original_SUB_ID', keep='first')
 

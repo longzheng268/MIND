@@ -1,4 +1,17 @@
-# 分析脚本重命名计划
+## 近期状态更新（2026-04-09）
+
+- `step2b_connectome_viz.py` 已标记为 legacy visualization script，不再作为主分析链路的核心结果来源。
+- `step3_lme_updrs.py` 已适配当前长表数据中的 `UPDRSIII/UPDRSIII.1` 命名，能够在 `mind` 环境中正常运行。
+- `step3c_lme_2year_multiscale.py` 已增加 `UPDRS3` 别名映射，能够兼容当前 CSV 列名并完成 6 个量表分析。
+- `step3d_baseline_regression.py` 已从旧宽表假设切换为基于当前长表动态整理 BL/V04/V06/V10/V12 后再执行回归。
+- `step3d_baseline_regression.py` 当前主输出聚焦 `V10` 与 `V12` 两组图片，并恢复每组 Figure 1 / Figure 2 成对结果。
+- `step3d_baseline_regression.py` Aim 3 已加入退化样本保护，V12 非 HC 子样本不足时会自动跳过，避免出现 `R²=1.0000` 假完美结果。
+- `step3d_baseline_regression.py` 绘图风格现已向 Step2/Step3 统一收敛，图幅、字体、grid、stripplot 样式、标题编号均受 `config.py` 监管。
+- `step3d_baseline_regression.py` 现会先保存 PNG，再统一阻塞预览弹窗。
+- `step3f_saa_subgroup_analysis.py` 已增加 `UPDRS3` 别名映射，能够兼容当前 CSV 中的 `UPDRSIII/UPDRSIII.1`。
+- `step4_ml/step4_ml_prediction.py` 已增加 `UPDRS3` 别名映射，能够兼容当前 CSV 中的 `UPDRSIII/UPDRSIII.1`。
+- `config.py` 已新增时间点过滤/映射/刻度辅助函数，Step 3/4 相关脚本正统一切换为受 config 控制。
+- `config.py` 当前统一采用阻塞式显示（`plt.ioff()`），窗口默认收敛为较小预览尺寸。
 
 ## 背景
 用户按照论文分析流程将所有脚本组织为 Step1-4，Step2 内按分析层级用字母区分，辅助工具文件加 utils_ 前缀。

@@ -1,6 +1,6 @@
 # MIND Analysis — Progress Tracker
 
-> Last updated: 2026-04-07
+> Last updated: 2026-04-09
 
 ---
 
@@ -20,6 +20,36 @@ Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
 - `step2d_edgewise_analysis.py` runs successfully in the `mind` environment after the data path fix.
 - `step2b_network_ancova_7nets.py` is the current recommended Step 2b inference script for four-group baseline MIND network differences.
 - `step2b_connectome_viz.py` is kept only as a legacy visualization script and should not be treated as the primary inference path.
+- `step3_lme_updrs.py` now auto-detects `UPDRS3/UPDRSIII/UPDRSIII.1` and runs successfully in the current dataset.
+- `step3c_lme_2year_multiscale.py` now resolves the `UPDRS3` alias against the current CSV and runs successfully.
+- `step3d_baseline_regression.py` has been updated from an outdated wide-table assumption to the current long-table workflow and now runs successfully.
+- `step3d_baseline_regression.py` now keeps `V10` and `V12` as the primary figure groups, restores paired Figure 1 / Figure 2 outputs for each endpoint, and previews the saved figures with blocking display.
+- `step3d_baseline_regression.py` now aligns its boxplot / stripplot / title / grid conventions with the broader Step 2–3 config-driven style.
+- `step3d_baseline_regression.py` Aim 3 now skips degenerate non-HC subsets instead of reporting spurious perfect `R²`.
+- `step3f_saa_subgroup_analysis.py` now resolves the `UPDRS3` alias against the current CSV and runs successfully.
+- `step4_ml/step4_ml_prediction.py` now resolves the `UPDRS3` alias against the current CSV and runs successfully.
+- `config.py` now governs the actual full Step 3 timeline as `BL/V04/V06/V08/V10/V12` (no `V02` in the current dataset), and plot titles/xticks are generated from config.
+
+### Latest Step 3 findings (2026-04-09)
+
+- `step3_lme_updrs.py`
+  - Model A and Model B both completed.
+  - `Time:MIND_BL` is not significant in the current data.
+  - Significant time interactions are present for `prodromal_SAA+` and `PD_SAA+`.
+- `step3c_lme_2year_multiscale.py`
+  - All 6 scales completed.
+  - `Time:MIND_BL` p-values: UPDRS3 `0.381`, MoCA `0.722`, GDS15_all `0.078`, RBDSQ_all `0.067`, NP1APAT `0.983`, NP1FATG `0.293`.
+- `step3d_baseline_regression.py`
+  - Current primary outputs focus on paired `V10` and `V12` figure groups.
+  - Each group restores two figures: `Aim2_Group_Delta_Boxplot_{V10/V12}.png` and `Aim2_MIND_Prediction_{V10/V12}.png`.
+  - Latest matched sample sizes: `V10 n=144`, `V12 n=81`.
+  - Aim 3 reports valid incremental-value results for `V10`, while `V12` is skipped because non-HC `n=3` is below the safeguard threshold.
+- `step3f_saa_subgroup_analysis.py`
+  - BL SAA+ vs SAA- ANCOVA: Global/Visual/Dorsal/Ventral/Limbic/Frontoparietal/Default are significant after FDR; Somatomotor is not.
+  - SAA subgroup LME: neither `Time:MIND_BL` nor `Time:SAA_Status` interaction is significant for MoCA or UPDRS3 in the current data.
+- `step4_ml/step4_ml_prediction.py`
+  - Regression: MoCA Δ and UPDRS3 Δ both show weak predictive performance; best model is ElasticNet for both tasks.
+  - Classification: SAA+ vs SAA- reaches best AUC with SVC (`~0.704`) and best accuracy with LogisticRegression (`~0.705`).
 
 ---
 
@@ -37,7 +67,7 @@ Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
 |---|---|---|
 | `step2a_global_mind_comparison.py` | ✅ Ready | Radar, boxplot, brain surface T-map, connectome |
 
-**Validated fixes (2026-04-07):**
+**Validated fixes (2026-04-09):**
 - `GROUPS` → `GROUP_ORDER`
 - blocking `plt.show(block=True)` restored
 - display behavior unified through `config.py`
@@ -139,11 +169,9 @@ Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
 | Script | Status | Outputs |
 |---|---|---|
 | `step3c_lme_2year_multiscale.py` | ✅ Ready (standalone) | 6-scale LME per `./MIND_Research_Results/{scale}/` |
-| `step3d_baseline_regression.py` | ✅ Ready (standalone) | Baseline regression prediction |
+| `step3d_baseline_regression.py` | ✅ Ready (standalone) | Baseline regression prediction with `V10`/`V12` paired figures |
 | `step3e_lme_nonmotor_extended.py` | ✅ Ready (standalone) | 5 新量表 LME（ESS/SCOPA/S-AI/T-AI/UPSIT） |
 | `step3f_saa_subgroup_analysis.py` | ✅ Ready (standalone) | SAA 亚组：BL MIND ANCOVA + SAA 调节 LME |
-
-> ⚠️  `step3c_lme_2year_multiscale.py` still references `./量表/` — update to `./scale/`
 
 ---
 

@@ -37,11 +37,49 @@ YEO7_MAP = {
 
 # ── 时间映射 ──────────────────────────────────────────────────────────────────
 # 完整随访时间点（单位：年）
-TIME_MAP_FULL = {'BL': 0, 'V02': 0.5, 'V04': 1, 'V06': 2, 'V08': 3, 'V10': 4, 'V12': 5}
+TIME_MAP_FULL = {'BL': 0, 'V04': 1, 'V06': 2, 'V08': 3, 'V10': 4, 'V12': 5}
 # 2年随访时间点
 TIME_MAP_3PT  = {'BL': 0, 'V04': 1, 'V06': 2}
 # 2年随访 X 轴刻度标签
 TIME_LABELS_3 = ['Baseline (BL)', 'Year 1 (V04)', 'Year 2 (V06)']
+TIME_WINDOW_3PT_LABEL = 'BL/V04/V06'
+TIME_WINDOW_3PT_TITLE = '2-Year Fixed Timepoints'
+TIME_WINDOW_FU1_LABEL = 'Baseline to Year 1'
+TIME_WINDOW_FU2_LABEL = 'Baseline to Year 2'
+STEP3D_REGRESSION_ENDPOINTS = [
+    {'event': 'V04', 'label': 'Baseline to Year 1', 'suffix': 'V04'},
+    {'event': 'V06', 'label': 'Baseline to Year 2', 'suffix': 'V06'},
+    {'event': 'V10', 'label': 'Baseline to Year 4', 'suffix': 'V10'},
+    {'event': 'V12', 'label': 'Baseline to Year 5', 'suffix': 'V12'},
+]
+STEP3D_PRIMARY_ENDPOINTS = ['V10', 'V12']
+# 全时间点 X 轴刻度标签
+TIME_LABELS_FULL = ['Baseline (BL)', 'Year 1 (V04)', 'Year 2 (V06)', 'Year 3 (V08)', 'Year 4 (V10)', 'Year 5 (V12)']
+TIME_WINDOW_FULL_LABEL = 'BL/V04/V06/V08/V10/V12'
+TIME_WINDOW_FULL_TITLE = 'Full Available Timepoints'
+
+TIMEPOINTS_FULL = list(TIME_MAP_FULL.keys())
+TIMEPOINTS_3PT = list(TIME_MAP_3PT.keys())
+BL_EVENT = TIMEPOINTS_3PT[0]
+FOLLOWUP_EVENT_1Y = TIMEPOINTS_3PT[1]
+FOLLOWUP_EVENT_2Y = TIMEPOINTS_3PT[2]
+
+
+def filter_event_rows(df, time_map, event_col='EVENT_ID'):
+    return df[df[event_col].isin(time_map.keys())].copy()
+
+
+def add_time_from_event(df, time_map, event_col='EVENT_ID', clean_col='EVENT_ID_Clean', time_col='Time'):
+    df = filter_event_rows(df, time_map, event_col=event_col)
+    df[clean_col] = df[event_col]
+    df[time_col] = df[clean_col].map(time_map)
+    return df
+
+
+def get_time_ticks_and_labels(time_map, labels=None):
+    tick_values = list(time_map.values())
+    tick_labels = labels if labels is not None else list(time_map.keys())
+    return tick_values, tick_labels
 
 # MIND 水平分组标签（纵向轨迹图用）
 MIND_LEVEL_ORDER = ['High MIND (Mean+1SD)', 'Mid MIND (Mean)', 'Low MIND (Mean-1SD)']

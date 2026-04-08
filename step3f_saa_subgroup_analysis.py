@@ -16,7 +16,7 @@ apply_style()
 # 分析 2：SAA 状态对临床量表变化速率的调节（LME）
 # 复用研究方案第五节"亚组敏感性"策略
 
-DATA_FILE       = './scale/MIND_Longitudinal_Clean_Data_filled.csv'
+DATA_FILE       = './scale/MIND_baseline_with_followup_V04_V12.csv'
 BASE_OUTPUT_DIR = './MIND_Research_Results/'
 
 # 7 网络 + 全局 MIND 指标
@@ -40,6 +40,18 @@ MIND_SHORT = {
 
 # LME 分析的量表
 LME_SCALES = ['MoCA', 'UPDRS3']
+SCALE_COLUMN_ALIASES = {
+    'MoCA': ['MoCA'],
+    'UPDRS3': ['UPDRS3', 'UPDRSIII', 'UPDRSIII.1'],
+}
+
+
+def _get_scale_col(df, scale):
+    for col in SCALE_COLUMN_ALIASES.get(scale, [scale]):
+        if col in df.columns:
+            return col
+    raise KeyError(f"未找到量表列: {scale}")
+
 
 # BL 基线评分列名映射
 BL_SCALE_MAP = {'MoCA': 'MoCA', 'UPDRS3': 'UPDRS3'}
@@ -190,14 +202,10 @@ def run_analysis2_saa_lme():
         print(f"找不到文件: {DATA_FILE}")
         return
 
-    df_raw = pd.read_csv(DATA_FILE)
-
-    # 时间点映射
-    df_raw['EVENT_ID_Clean'] = df_raw['EVENT_ID'].str.extract(r'(BL|V04|V06)', expand=False)
-    df_raw['Time'] = df_raw['EVENT_ID_Clean'].map(TIME_MAP_3PT)
+    df_raw = add_time_from_event(pd.read_csv(DATA_FILE), TIME_MAP_3PT)
 
     # 基线 MIND
-    df_bl_mind = (df_raw[df_raw['EVENT_ID_Clean'] == 'BL']
+    df_bl_mind = (df_raw[df_raw['EVENT_ID_Clean'] == BL_EVENT]
                   [['Original_SUB_ID', 'MIND_Sig_Index']].copy())
     df_bl_mind.columns = ['Original_SUB_ID', 'MIND_BL']
 
@@ -209,17 +217,19 @@ def run_analysis2_saa_lme():
 
     for scale in LME_SCALES:
         print(f"\n  >>> 正在处理量表: {scale} ...")
-        df_sub[scale] = pd.to_numeric(df_sub[scale], errors='coerce')
-        bl_col = BL_SCALE_MAP[scale]
+        scale_col = _get_scale_col(df_sub, scale)
+        df_sub[scale_col] = pd.to_numeric(df_sub[scale_col], errors='coerce')
+        bl_col = _get_scale_col(df_raw, BL_SCALE_MAP[scale])
 
         # 合并基线 MIND + 基线评分
-        df_bl_score = (df_raw[(df_raw['EVENT_ID_Clean'] == 'BL') &
+        df_bl_score = (df_raw[(df_raw['EVENT_ID_Clean'] == BL_EVENT) &
                               (df_raw['SAA_Status'].isin(['Positive', 'Negative']))]
                        [['Original_SUB_ID', bl_col]].copy())
         df_bl_score.columns = ['Original_SUB_ID', f'{scale}_BL']
 
         df_long = pd.merge(df_sub, df_bl_mind, on='Original_SUB_ID', how='inner')
         df_long = pd.merge(df_long, df_bl_score, on='Original_SUB_ID', how='inner')
+        df_long[scale] = df_long[scale_col]
 
         cols_needed = [scale, 'Time', 'MIND_BL', f'{scale}_BL',
                        'Age_at_Visit', 'Sex', 'Education', 'SAA_Status']
@@ -256,7 +266,8 @@ def run_analysis2_saa_lme():
                          palette=saa_palette,
                          marker=MARKER, markersize=MARKERSIZE,
                          errorbar=ERRORBAR, linewidth=LINEWIDTH)
-            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
+            plt.xticks(ticks_3pt, labels_3pt)
             plt.title(f"SAA Subgroup: {scale} Longitudinal Trajectory\n(SAA+ vs SAA-, Model 1)",
                       fontsize=FONT_TITLE)
             plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
@@ -278,7 +289,8 @@ def run_analysis2_saa_lme():
                          palette=CMAP_TRAJECTORY,
                          marker='s', markersize=MARKERSIZE,
                          errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK)
-            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
+            plt.xticks(ticks_3pt, labels_3pt)
             plt.title(f"SAA Subgroup: {scale} Progression Predicted by Baseline MIND\n(Model 2)",
                       fontsize=FONT_TITLE)
             plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
@@ -336,7 +348,8 @@ def run_analysis2_saa_lme():
                          palette={'Negative': '#66c2a5', 'Positive': '#fc8d62'},
                          marker=MARKER, markersize=MARKERSIZE,
                          errorbar=ERRORBAR, linewidth=LINEWIDTH)
-            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
+            plt.xticks(ticks_3pt, labels_3pt)
             plt.title(f"SAA Subgroup: {scale} Longitudinal Trajectory (OLS)", fontsize=FONT_TITLE)
             plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
             plt.savefig(os.path.join(scale_dir, "Fig1_SAA_Trajectory.png"), dpi=DPI)

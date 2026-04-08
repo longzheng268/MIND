@@ -12,10 +12,20 @@ apply_style()
 # 参数（优化器、随机效应公式、图幅、颜色等）全部来自 config.py
 
 # --- 路径与量表列表 ---
-DATA_FILE       = './scale/MIND_Longitudinal_Clean_Data_filled.csv'
+DATA_FILE       = './scale/MIND_baseline_with_followup_V04_V12.csv'
 BASE_OUTPUT_DIR = './MIND_Research_Results/'
 # 所有量表统一循环处理（研究设计第六节）
 SCALES = ['UPDRS3', 'MoCA', 'GDS15_all', 'RBDSQ_all', 'NP1APAT', 'NP1FATG']
+SCALE_COLUMN_ALIASES = {
+    'UPDRS3': ['UPDRS3', 'UPDRSIII', 'UPDRSIII.1'],
+}
+
+
+def _get_scale_col(df, scale):
+    for col in SCALE_COLUMN_ALIASES.get(scale, [scale]):
+        if col in df.columns:
+            return col
+    raise KeyError(f"未找到量表列: {scale}")
 
 
 def _fit_lme(formula, data, groups_col):
@@ -43,31 +53,29 @@ def run_research_pipeline():
         print(f"找不到文件: {DATA_FILE}")
         return
 
-    df_raw = pd.read_csv(DATA_FILE)
-
-    # 时间点清洗与映射（TIME_MAP_3PT 来自 config.py）
-    df_raw['EVENT_ID_Clean'] = df_raw['EVENT_ID'].str.extract(r'(BL|V04|V06)', expand=False)
-    df_raw['Time'] = df_raw['EVENT_ID_Clean'].map(TIME_MAP_3PT)
+    df_raw = add_time_from_event(pd.read_csv(DATA_FILE), TIME_MAP_3PT)
 
     # 提取基线 MIND 指标（独立预测因子）
-    df_bl_mind = (df_raw[df_raw['EVENT_ID_Clean'] == 'BL']
+    df_bl_mind = (df_raw[df_raw['EVENT_ID_Clean'] == BL_EVENT]
                   [['Original_SUB_ID', 'MIND_Sig_Index']]
                   .copy())
     df_bl_mind.columns = ['Original_SUB_ID', 'MIND_BL']
 
     for scale in SCALES:
         print(f"\n>>> 正在处理量表: {scale} ...")
-        df_raw[scale] = pd.to_numeric(df_raw[scale], errors='coerce')
+        scale_col = _get_scale_col(df_raw, scale)
+        df_raw[scale_col] = pd.to_numeric(df_raw[scale_col], errors='coerce')
         scale_dir = os.path.join(BASE_OUTPUT_DIR, scale)
         os.makedirs(scale_dir, exist_ok=True)
 
         # 准备长格式数据：合并基线评分作为协变量（控制基线起点差异）
-        df_bl_score = (df_raw[df_raw['EVENT_ID_Clean'] == 'BL']
-                       [['Original_SUB_ID', scale]]
+        df_bl_score = (df_raw[df_raw['EVENT_ID_Clean'] == BL_EVENT]
+                       [['Original_SUB_ID', scale_col]]
                        .copy())
         df_bl_score.columns = ['Original_SUB_ID', f'{scale}_BL']
         df_long = pd.merge(df_raw, df_bl_mind, on='Original_SUB_ID', how='inner')
         df_long = pd.merge(df_long, df_bl_score, on='Original_SUB_ID', how='inner')
+        df_long[scale] = df_long[scale_col]
 
         cols_needed = [scale, 'Time', 'MIND_BL', f'{scale}_BL',
                        'Age_at_Visit', 'Sex', 'Education', 'Group_MIND']
@@ -102,7 +110,8 @@ def run_research_pipeline():
                          palette=GROUP_PALETTE,
                          marker=MARKER, markersize=MARKERSIZE,
                          errorbar=ERRORBAR, linewidth=LINEWIDTH)
-            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
+            plt.xticks(ticks_3pt, labels_3pt)
             plt.title(f"Figure 1: {scale} Longitudinal Trajectory by Disease Groups",
                       fontsize=FONT_TITLE)
             plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
@@ -125,7 +134,8 @@ def run_research_pipeline():
                          palette=CMAP_TRAJECTORY,
                          marker='s', markersize=MARKERSIZE,
                          errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK)
-            plt.xticks(list(TIME_MAP_3PT.values()), TIME_LABELS_3)
+            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
+            plt.xticks(ticks_3pt, labels_3pt)
             plt.title(f"Figure 2: {scale} Progression Predicted by Baseline MIND",
                       fontsize=FONT_TITLE)
             plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)

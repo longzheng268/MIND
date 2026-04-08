@@ -57,6 +57,7 @@ STEP3D_PRIMARY_ENDPOINTS = ['V10', 'V12']
 TIME_LABELS_FULL = ['Baseline (BL)', 'Year 1 (V04)', 'Year 2 (V06)', 'Year 3 (V08)', 'Year 4 (V10)', 'Year 5 (V12)']
 TIME_WINDOW_FULL_LABEL = 'BL/V04/V06/V08/V10/V12'
 TIME_WINDOW_FULL_TITLE = 'Full Available Timepoints'
+STEP3_FULL_MIN_PLOT_N = 100
 
 TIMEPOINTS_FULL = list(TIME_MAP_FULL.keys())
 TIMEPOINTS_3PT = list(TIME_MAP_3PT.keys())

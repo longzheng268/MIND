@@ -26,7 +26,8 @@ Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
 - `step3d_baseline_regression.py` now keeps `V10` and `V12` as the primary figure groups, restores paired Figure 1 / Figure 2 outputs for each endpoint, and previews the saved figures with blocking display.
 - `step3d_baseline_regression.py` now aligns its boxplot / stripplot / title / grid conventions with the broader Step 2–3 config-driven style.
 - `step3d_baseline_regression.py` Aim 3 now skips degenerate non-HC subsets instead of reporting spurious perfect `R²`.
-- `step3f_saa_subgroup_analysis.py` now resolves the `UPDRS3` alias against the current CSV and runs successfully.
+- `step3e_lme_nonmotor_extended.py` now supports both `FullTimeline` and `2Year` outputs under config-governed time definitions, labels, and sparse-visit plotting thresholds.
+- `step3f_saa_subgroup_analysis.py` analysis 2 now supports both `FullTimeline` and `2Year` LME outputs, while analysis 1 remains BL-only ANCOVA.
 - `step4_ml/step4_ml_prediction.py` now resolves the `UPDRS3` alias against the current CSV and runs successfully.
 - `config.py` now governs the actual full Step 3 timeline as `BL/V04/V06/V08/V10/V12` (no `V02` in the current dataset), and plot titles/xticks are generated from config.
 

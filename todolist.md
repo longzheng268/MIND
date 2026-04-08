@@ -29,6 +29,8 @@
 - [ ] `step2b_connectome_viz.py`：nilearn connectome 图颜色映射与 config.py 对齐验证
 - [x] `step3d_baseline_regression.py`：恢复 `V10` / `V12` 成对 Figure 1 / Figure 2 输出，并统一至 config 驱动样式（2026-04-09）
 - [x] `step3d_baseline_regression.py`：恢复保存后统一阻塞预览弹窗（2026-04-09）
+- [x] `step3e_lme_nonmotor_extended.py`：扩展为 `FullTimeline` / `2Year` 双时间窗 LME 输出（2026-04-09）
+- [x] `step3f_saa_subgroup_analysis.py`：分析 2 扩展为 `FullTimeline` / `2Year` 双时间窗 LME 输出（2026-04-09）
 
 ## 数据文件
 

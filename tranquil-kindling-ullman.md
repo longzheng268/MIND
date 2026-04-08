@@ -8,6 +8,8 @@
 - `step3d_baseline_regression.py` Aim 3 已加入退化样本保护，V12 非 HC 子样本不足时会自动跳过，避免出现 `R²=1.0000` 假完美结果。
 - `step3d_baseline_regression.py` 绘图风格现已向 Step2/Step3 统一收敛，图幅、字体、grid、stripplot 样式、标题编号均受 `config.py` 监管。
 - `step3d_baseline_regression.py` 现会先保存 PNG，再统一阻塞预览弹窗。
+- `step3e_lme_nonmotor_extended.py` 现已支持 `FullTimeline` 与 `2Year` 双时间窗输出，图标题、xtick、文件命名和晚期时间点可视化阈值统一受 `config.py` 监管。
+- `step3f_saa_subgroup_analysis.py` 的分析 2（LME）现已支持 `FullTimeline` 与 `2Year` 双时间窗输出；分析 1 仍保持 BL 基线 ANCOVA。
 - `step3f_saa_subgroup_analysis.py` 已增加 `UPDRS3` 别名映射，能够兼容当前 CSV 中的 `UPDRSIII/UPDRSIII.1`。
 - `step4_ml/step4_ml_prediction.py` 已增加 `UPDRS3` 别名映射，能够兼容当前 CSV 中的 `UPDRSIII/UPDRSIII.1`。
 - `config.py` 已新增时间点过滤/映射/刻度辅助函数，Step 3/4 相关脚本正统一切换为受 config 控制。

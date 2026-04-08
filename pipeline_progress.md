@@ -30,8 +30,8 @@
 - `step3d_baseline_regression.py`：Aim 3 现已加入退化样本保护；当非 HC 子样本过少、`SAA_Status` 无变异或残差自由度不足时，自动跳过增量价值分析，避免出现 `R²=1.0000` 这类假完美结果
 - `step3d_baseline_regression.py`：绘图风格已向 Step2/Step3 统一收敛，图幅、字体、grid、stripplot 样式、标题编号均受 `config.py` 监管
 - `step3d_baseline_regression.py`：保存 PNG 后支持统一 `plt.show(block=True)` 预览，不再出现“只保存不弹窗”的行为
-- `step3f_saa_subgroup_analysis.py`：新增 `UPDRS3/UPDRSIII/UPDRSIII.1` 别名兼容，已在 `mind` 环境跑通 SAA 亚组 ANCOVA + LME
-- `step4_ml/step4_ml_prediction.py`：新增 `UPDRS3/UPDRSIII/UPDRSIII.1` 别名兼容，已在 `mind` 环境跑通回归与分类任务
+- `step3e_lme_nonmotor_extended.py`：现已支持 `FullTimeline`（`BL/V04/V06/V08/V10/V12`）与 `2Year`（`BL/V04/V06`）双时间窗输出，图标题、xtick、保存命名和晚期时间点可视化阈值统一受 `config.py` 控制
+- `step3f_saa_subgroup_analysis.py`：分析 2（SAA 状态调节 LME）现已支持 `FullTimeline` 与 `2Year` 双时间窗输出；分析 1 仍保持 BL 基线 ANCOVA，不扩展到随访
 - `config.py`：Step 3/4 时间控制已进一步收敛到当前真实数据时间窗，full timeline 统一为 `BL/V04/V06/V08/V10/V12`，图标题与 xtick 由 config 统一生成
 
 ---

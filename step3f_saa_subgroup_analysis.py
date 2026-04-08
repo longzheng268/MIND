@@ -18,6 +18,25 @@ apply_style()
 
 DATA_FILE       = './scale/MIND_baseline_with_followup_V04_V12.csv'
 BASE_OUTPUT_DIR = './MIND_Research_Results/'
+PREVIEW_PLOTS   = True
+TIMELINE_CONFIGS = [
+    {
+        'key': 'full',
+        'time_map': TIME_MAP_FULL,
+        'time_labels': TIME_LABELS_FULL,
+        'window_title': TIME_WINDOW_FULL_TITLE,
+        'window_label': TIME_WINDOW_FULL_LABEL,
+        'suffix': 'FullTimeline',
+    },
+    {
+        'key': '2year',
+        'time_map': TIME_MAP_3PT,
+        'time_labels': TIME_LABELS_3,
+        'window_title': TIME_WINDOW_3PT_TITLE,
+        'window_label': TIME_WINDOW_3PT_LABEL,
+        'suffix': '2Year',
+    },
+]
 
 # 7 网络 + 全局 MIND 指标
 MIND_COLS = [
@@ -70,6 +89,69 @@ def _fit_lme(formula, data, groups_col):
             except Exception:
                 continue
     raise ValueError("所有优化器均失败，转 OLS 保底")
+
+
+def _get_plot_df(df_clean, timeline_cfg, scale):
+    if timeline_cfg['key'] != 'full':
+        return df_clean.copy(), timeline_cfg['time_map'], timeline_cfg['time_labels']
+
+    visit_counts = df_clean['EVENT_ID_Clean'].value_counts()
+    kept_events = [event for event in TIMEPOINTS_FULL if visit_counts.get(event, 0) >= STEP3_FULL_MIN_PLOT_N]
+    if kept_events != TIMEPOINTS_FULL:
+        dropped = [event for event in TIMEPOINTS_FULL if event not in kept_events]
+        print(f"    [{scale}][{timeline_cfg['suffix']}] 可视化最小样本阈值={STEP3_FULL_MIN_PLOT_N}，不绘制: {dropped}")
+    kept_map = {event: TIME_MAP_FULL[event] for event in kept_events}
+    kept_labels = [TIME_LABELS_FULL[TIMEPOINTS_FULL.index(event)] for event in kept_events]
+    return df_clean[df_clean['EVENT_ID_Clean'].isin(kept_events)].copy(), kept_map, kept_labels
+
+
+def _plot_saa_trajectory(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels):
+    fig, ax = plt.subplots(figsize=FIG_SINGLE)
+    saa_palette = {'Negative': '#66c2a5', 'Positive': '#fc8d62'}
+    sns.lineplot(data=df_plot, x='Time', y='Fitted_G',
+                 hue='SAA_Status',
+                 palette=saa_palette,
+                 marker=MARKER, markersize=MARKERSIZE,
+                 errorbar=ERRORBAR, linewidth=LINEWIDTH,
+                 ax=ax)
+    ticks, labels = get_time_ticks_and_labels(tick_map, tick_labels)
+    ax.set_xticks(ticks, labels, rotation=30 if timeline_cfg['key'] == 'full' else 0)
+    ax.set_title(
+        f"SAA Subgroup: {scale} Longitudinal Trajectory\n"
+        f"(SAA+ vs SAA-, {timeline_cfg['window_title']}, Model 1)",
+        fontsize=FONT_TITLE,
+    )
+    ax.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
+    fig.savefig(os.path.join(scale_dir, f"Fig1_SAA_Trajectory_{timeline_cfg['suffix']}.png"), dpi=DPI)
+    return fig
+
+
+def _plot_mind_prediction(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels):
+    m_val, s_val = df_plot['MIND_BL'].mean(), df_plot['MIND_BL'].std()
+    df_viz = df_plot.copy()
+    df_viz['MIND_Level'] = np.where(
+        df_viz['MIND_BL'] > m_val + s_val, MIND_LEVEL_ORDER[0],
+        np.where(df_viz['MIND_BL'] < m_val - s_val, MIND_LEVEL_ORDER[2],
+                 MIND_LEVEL_ORDER[1])
+    )
+
+    fig, ax = plt.subplots(figsize=FIG_SINGLE)
+    sns.lineplot(data=df_viz, x='Time', y='Fitted_M',
+                 hue='MIND_Level', hue_order=MIND_LEVEL_ORDER,
+                 palette=CMAP_TRAJECTORY,
+                 marker='s', markersize=MARKERSIZE,
+                 errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK,
+                 ax=ax)
+    ticks, labels = get_time_ticks_and_labels(tick_map, tick_labels)
+    ax.set_xticks(ticks, labels, rotation=30 if timeline_cfg['key'] == 'full' else 0)
+    ax.set_title(
+        f"SAA Subgroup: {scale} Progression Predicted by Baseline MIND\n"
+        f"({timeline_cfg['window_title']}, Model 2)",
+        fontsize=FONT_TITLE,
+    )
+    ax.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
+    fig.savefig(os.path.join(scale_dir, f"Fig2_MIND_Prediction_{timeline_cfg['suffix']}.png"), dpi=DPI)
+    return fig
 
 
 def run_analysis1_bl_ancova():
@@ -192,36 +274,24 @@ def run_analysis1_bl_ancova():
     print(f"\n  箱线图已保存至: {out_dir}/Fig1_SAA_BL_Boxplots.png")
 
 
-def run_analysis2_saa_lme():
-    """分析 2：SAA 状态对临床量表变化速率的调节（LME）。"""
-    print("\n" + "="*60)
-    print("分析 2：SAA 状态调节临床变化速率（LME）")
-    print("="*60)
+def _run_single_timeline(df_source, timeline_cfg, preview_figs):
+    df_raw = add_time_from_event(df_source.copy(), timeline_cfg['time_map'])
 
-    if not os.path.exists(DATA_FILE):
-        print(f"找不到文件: {DATA_FILE}")
-        return
-
-    df_raw = add_time_from_event(pd.read_csv(DATA_FILE), TIME_MAP_3PT)
-
-    # 基线 MIND
     df_bl_mind = (df_raw[df_raw['EVENT_ID_Clean'] == BL_EVENT]
                   [['Original_SUB_ID', 'MIND_Sig_Index']].copy())
     df_bl_mind.columns = ['Original_SUB_ID', 'MIND_BL']
 
-    # 仅取 SAA+ 和 SAA-（prodromal 亚组）
     df_sub = df_raw[df_raw['SAA_Status'].isin(['Positive', 'Negative'])].copy()
     df_sub['SAA_Status'] = pd.Categorical(
         df_sub['SAA_Status'], categories=['Negative', 'Positive'], ordered=True
     )
 
     for scale in LME_SCALES:
-        print(f"\n  >>> 正在处理量表: {scale} ...")
+        print(f"\n  >>> 正在处理量表: {scale} [{timeline_cfg['window_title']}] ...")
         scale_col = _get_scale_col(df_sub, scale)
         df_sub[scale_col] = pd.to_numeric(df_sub[scale_col], errors='coerce')
         bl_col = _get_scale_col(df_raw, BL_SCALE_MAP[scale])
 
-        # 合并基线 MIND + 基线评分
         df_bl_score = (df_raw[(df_raw['EVENT_ID_Clean'] == BL_EVENT) &
                               (df_raw['SAA_Status'].isin(['Positive', 'Negative']))]
                        [['Original_SUB_ID', bl_col]].copy())
@@ -246,58 +316,26 @@ def run_analysis2_saa_lme():
         scale_dir = os.path.join(BASE_OUTPUT_DIR, 'SAA_subgroup_lme', scale)
         os.makedirs(scale_dir, exist_ok=True)
 
-        # 双模型公式
         formula1 = (f"{scale} ~ Time * C(SAA_Status)"
                     f" + Age_at_Visit + C(Sex) + Education")
         formula2 = (f"{scale} ~ Time * C(SAA_Status)"
                     f" + Time * MIND_BL + {scale}_BL"
                     f" + Age_at_Visit + C(Sex) + Education")
 
+        summary_path = os.path.join(scale_dir, f"Statistical_Summary_{timeline_cfg['suffix']}.txt")
+
         try:
             mdf1 = _fit_lme(formula1, df_clean, 'Original_SUB_ID')
             mdf2 = _fit_lme(formula2, df_clean, 'Original_SUB_ID')
+            print(f"    [{timeline_cfg['suffix']}] LME 拟合完成，结果已保存。")
 
-            # 图1：SAA+ vs SAA- 纵向轨迹（模型 1）
-            plt.figure(figsize=FIG_SINGLE)
             df_clean['Fitted_G'] = mdf1.predict(df_clean)
-            saa_palette = {'Negative': '#66c2a5', 'Positive': '#fc8d62'}
-            sns.lineplot(data=df_clean, x='Time', y='Fitted_G',
-                         hue='SAA_Status',
-                         palette=saa_palette,
-                         marker=MARKER, markersize=MARKERSIZE,
-                         errorbar=ERRORBAR, linewidth=LINEWIDTH)
-            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
-            plt.xticks(ticks_3pt, labels_3pt)
-            plt.title(f"SAA Subgroup: {scale} Longitudinal Trajectory\n(SAA+ vs SAA-, Model 1)",
-                      fontsize=FONT_TITLE)
-            plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
-            plt.savefig(os.path.join(scale_dir, "Fig1_SAA_Trajectory.png"), dpi=DPI)
-            plt.close()
+            df_clean['Fitted_M'] = mdf2.predict(df_clean)
+            df_plot, tick_map, tick_labels = _get_plot_df(df_clean, timeline_cfg, scale)
+            if len(df_plot) > 0:
+                preview_figs.append(_plot_saa_trajectory(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels))
+                preview_figs.append(_plot_mind_prediction(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels))
 
-            # 图2：MIND 三水平预测轨迹（模型 2）
-            m_val, s_val = df_clean['MIND_BL'].mean(), df_clean['MIND_BL'].std()
-            df_viz = df_clean.copy()
-            df_viz['Fitted_M'] = mdf2.predict(df_viz)
-            df_viz['MIND_Level'] = np.where(
-                df_viz['MIND_BL'] > m_val + s_val, MIND_LEVEL_ORDER[0],
-                np.where(df_viz['MIND_BL'] < m_val - s_val, MIND_LEVEL_ORDER[2],
-                         MIND_LEVEL_ORDER[1])
-            )
-            plt.figure(figsize=FIG_SINGLE)
-            sns.lineplot(data=df_viz, x='Time', y='Fitted_M',
-                         hue='MIND_Level', hue_order=MIND_LEVEL_ORDER,
-                         palette=CMAP_TRAJECTORY,
-                         marker='s', markersize=MARKERSIZE,
-                         errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK)
-            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
-            plt.xticks(ticks_3pt, labels_3pt)
-            plt.title(f"SAA Subgroup: {scale} Progression Predicted by Baseline MIND\n(Model 2)",
-                      fontsize=FONT_TITLE)
-            plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
-            plt.savefig(os.path.join(scale_dir, "Fig2_MIND_Prediction.png"), dpi=DPI)
-            plt.close()
-
-            # 简单斜率摘要
             sk = 'Time:MIND_BL'
             slope_line = ""
             if sk in mdf2.params:
@@ -311,7 +349,6 @@ def run_analysis2_saa_lme():
                               f"  β={beta:.4f}  SE={se:.4f}  "
                               f"95%CI=[{ci_lo:.4f},{ci_hi:.4f}]  p={pval:.4f}\n")
 
-            # SAA 交互项
             sk_saa = 'Time:C(SAA_Status)[T.Positive]'
             saa_line = ""
             if sk_saa in mdf1.params:
@@ -325,35 +362,50 @@ def run_analysis2_saa_lme():
                             f"  β={beta:.4f}  SE={se:.4f}  "
                             f"95%CI=[{ci_lo:.4f},{ci_hi:.4f}]  p={pval:.4f}\n")
 
-            # 保存统计报告
-            with open(os.path.join(scale_dir, "Statistical_Summary.txt"), 'w') as f:
-                f.write(f"MODEL 1: SAA SUBGROUP TRAJECTORY DIFFERENCES (ref=Negative)\n")
+            with open(summary_path, 'w') as f:
+                f.write(f"TIMELINE: {timeline_cfg['window_title']} ({timeline_cfg['window_label']})\n\n")
+                f.write("MODEL 1: SAA SUBGROUP TRAJECTORY DIFFERENCES (ref=Negative)\n")
                 f.write(mdf1.summary().as_text() + "\n\n")
                 f.write(saa_line + "\n")
-                f.write(f"MODEL 2: MIND INDEPENDENT PREDICTION (CONTROLLED FOR SAA)\n")
+                f.write("MODEL 2: MIND INDEPENDENT PREDICTION (CONTROLLED FOR SAA)\n")
                 f.write(mdf2.summary().as_text() + "\n\n")
                 f.write(slope_line)
 
         except Exception as e:
-            print(f"    LME 拟合失败: {e}，执行 OLS 保底...")
+            print(f"    LME 拟合失败，将自动切换 OLS 保底: {e}")
             mdf_ols = smf.ols(formula2, data=df_clean).fit()
-            with open(os.path.join(scale_dir, "OLS_Backup_Report.txt"), 'w') as f:
+            with open(os.path.join(scale_dir, f"OLS_Backup_Report_{timeline_cfg['suffix']}.txt"), 'w') as f:
+                f.write(f"TIMELINE: {timeline_cfg['window_title']} ({timeline_cfg['window_label']})\n\n")
                 f.write(mdf_ols.summary().as_text())
 
-            # OLS 保底也画图
             df_clean['Fitted_G'] = mdf_ols.predict(df_clean)
-            plt.figure(figsize=FIG_SINGLE)
-            sns.lineplot(data=df_clean, x='Time', y='Fitted_G',
-                         hue='SAA_Status',
-                         palette={'Negative': '#66c2a5', 'Positive': '#fc8d62'},
-                         marker=MARKER, markersize=MARKERSIZE,
-                         errorbar=ERRORBAR, linewidth=LINEWIDTH)
-            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
-            plt.xticks(ticks_3pt, labels_3pt)
-            plt.title(f"SAA Subgroup: {scale} Longitudinal Trajectory (OLS)", fontsize=FONT_TITLE)
-            plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
-            plt.savefig(os.path.join(scale_dir, "Fig1_SAA_Trajectory.png"), dpi=DPI)
-            plt.close()
+            df_clean['Fitted_M'] = mdf_ols.predict(df_clean)
+            df_plot, tick_map, tick_labels = _get_plot_df(df_clean, timeline_cfg, scale)
+            if len(df_plot) > 0:
+                preview_figs.append(_plot_saa_trajectory(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels))
+                preview_figs.append(_plot_mind_prediction(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels))
+
+
+def run_analysis2_saa_lme():
+    """分析 2：SAA 状态对临床量表变化速率的调节（LME）。"""
+    print("\n" + "="*60)
+    print("分析 2：SAA 状态调节临床变化速率（LME）")
+    print("="*60)
+
+    if not os.path.exists(DATA_FILE):
+        print(f"找不到文件: {DATA_FILE}")
+        return
+
+    df_source = pd.read_csv(DATA_FILE)
+    preview_figs = []
+    for timeline_cfg in TIMELINE_CONFIGS:
+        _run_single_timeline(df_source, timeline_cfg, preview_figs)
+
+    if PREVIEW_PLOTS and preview_figs:
+        plt.show(block=True)
+    else:
+        for fig in preview_figs:
+            plt.close(fig)
 
     print(f"\n>>> SAA 亚组分析完成！结果存放至: {BASE_OUTPUT_DIR}")
 

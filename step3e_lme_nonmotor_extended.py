@@ -16,7 +16,26 @@ apply_style()
 
 DATA_FILE       = './scale/MIND_baseline_with_followup_V04_V12.csv'
 BASE_OUTPUT_DIR = './MIND_Research_Results/'
+PREVIEW_PLOTS   = True
 SCALES = ['ESS_all', 'SCOPA_AUT_all', 'S-AI', 'T-AI', 'UPSIT_PRCNTGE']
+TIMELINE_CONFIGS = [
+    {
+        'key': 'full',
+        'time_map': TIME_MAP_FULL,
+        'time_labels': TIME_LABELS_FULL,
+        'window_title': TIME_WINDOW_FULL_TITLE,
+        'window_label': TIME_WINDOW_FULL_LABEL,
+        'suffix': 'FullTimeline',
+    },
+    {
+        'key': '2year',
+        'time_map': TIME_MAP_3PT,
+        'time_labels': TIME_LABELS_3,
+        'window_title': TIME_WINDOW_3PT_TITLE,
+        'window_label': TIME_WINDOW_3PT_LABEL,
+        'suffix': '2Year',
+    },
+]
 
 # 量表中文对照（报告用）
 SCALE_NAMES = {
@@ -55,164 +74,180 @@ def _fit_lme(formula, data, groups_col):
     raise ValueError("所有优化器均失败，转 OLS 保底")
 
 
-def run_extended_pipeline():
-    if not os.path.exists(DATA_FILE):
-        print(f"找不到文件: {DATA_FILE}")
-        return
+def _get_plot_df(df_clean, timeline_cfg, label_prefix):
+    if timeline_cfg['key'] != 'full':
+        return df_clean.copy(), timeline_cfg['time_map'], timeline_cfg['time_labels']
 
-    df_raw = add_time_from_event(pd.read_csv(DATA_FILE), TIME_MAP_3PT)
+    visit_counts = df_clean['EVENT_ID_Clean'].value_counts()
+    kept_events = [event for event in TIMEPOINTS_FULL if visit_counts.get(event, 0) >= STEP3_FULL_MIN_PLOT_N]
+    if kept_events != TIMEPOINTS_FULL:
+        dropped = [event for event in TIMEPOINTS_FULL if event not in kept_events]
+        print(f"    [{label_prefix}] 可视化最小样本阈值={STEP3_FULL_MIN_PLOT_N}，不绘制: {dropped}")
+    kept_map = {event: TIME_MAP_FULL[event] for event in kept_events}
+    kept_labels = [TIME_LABELS_FULL[TIMEPOINTS_FULL.index(event)] for event in kept_events]
+    return df_clean[df_clean['EVENT_ID_Clean'].isin(kept_events)].copy(), kept_map, kept_labels
 
-    # 提取基线 MIND 指标
+
+def _plot_group_progression(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels):
+    fig, ax = plt.subplots(figsize=FIG_SINGLE)
+    sns.lineplot(data=df_plot, x='Time', y='Fitted_G',
+                 hue='Group_MIND', hue_order=GROUP_ORDER,
+                 palette=GROUP_PALETTE,
+                 marker=MARKER, markersize=MARKERSIZE,
+                 errorbar=ERRORBAR, linewidth=LINEWIDTH,
+                 ax=ax)
+    ticks, labels = get_time_ticks_and_labels(tick_map, tick_labels)
+    ax.set_xticks(ticks, labels, rotation=30 if timeline_cfg['key'] == 'full' else 0)
+    ax.set_title(
+        f"Figure 1: {scale} Longitudinal Trajectory by Disease Groups\n"
+        f"({timeline_cfg['window_title']})",
+        fontsize=FONT_TITLE,
+    )
+    ax.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
+    fig.savefig(os.path.join(scale_dir, f"Fig1_Group_Progression_{timeline_cfg['suffix']}.png"), dpi=DPI)
+    return fig
+
+
+def _plot_mind_prediction(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels):
+    m_val, s_val = df_plot['MIND_BL'].mean(), df_plot['MIND_BL'].std()
+    df_viz = df_plot.copy()
+    df_viz['MIND_Level'] = np.where(
+        df_viz['MIND_BL'] > m_val + s_val, MIND_LEVEL_ORDER[0],
+        np.where(df_viz['MIND_BL'] < m_val - s_val, MIND_LEVEL_ORDER[2],
+                 MIND_LEVEL_ORDER[1])
+    )
+
+    fig, ax = plt.subplots(figsize=FIG_SINGLE)
+    sns.lineplot(data=df_viz, x='Time', y='Fitted_M',
+                 hue='MIND_Level', hue_order=MIND_LEVEL_ORDER,
+                 palette=CMAP_TRAJECTORY,
+                 marker='s', markersize=MARKERSIZE,
+                 errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK,
+                 ax=ax)
+    ticks, labels = get_time_ticks_and_labels(tick_map, tick_labels)
+    ax.set_xticks(ticks, labels, rotation=30 if timeline_cfg['key'] == 'full' else 0)
+    ax.set_title(
+        f"Figure 2: {scale} Progression Predicted by Baseline MIND\n"
+        f"({timeline_cfg['window_title']})",
+        fontsize=FONT_TITLE,
+    )
+    ax.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
+    fig.savefig(os.path.join(scale_dir, f"Fig2_MIND_Prediction_{timeline_cfg['suffix']}.png"), dpi=DPI)
+    return fig
+
+
+
+def _run_single_timeline(df_source, scale, scale_dir, timeline_cfg, preview_figs):
+    df_raw = add_time_from_event(df_source.copy(), timeline_cfg['time_map'])
+
     df_bl_mind = (df_raw[df_raw['EVENT_ID_Clean'] == BL_EVENT]
                   [['Original_SUB_ID', 'MIND_Sig_Index']]
                   .copy())
     df_bl_mind.columns = ['Original_SUB_ID', 'MIND_BL']
 
+    df_bl_score = (df_raw[df_raw['EVENT_ID_Clean'] == BL_EVENT]
+                   [['Original_SUB_ID', scale]]
+                   .copy())
+    df_bl_score.columns = ['Original_SUB_ID', f'{scale}_BL']
+    df_long = pd.merge(df_raw, df_bl_mind, on='Original_SUB_ID', how='inner')
+    df_long = pd.merge(df_long, df_bl_score, on='Original_SUB_ID', how='inner')
+
+    cols_needed = [scale, 'Time', 'MIND_BL', f'{scale}_BL',
+                   'Age_at_Visit', 'Sex', 'Education', 'Group_MIND']
+    df_clean = df_long.dropna(subset=cols_needed).reset_index(drop=True)
+    df_clean['Group_MIND'] = pd.Categorical(
+        df_clean['Group_MIND'], categories=GROUP_ORDER, ordered=True
+    )
+
+    if len(df_clean) < 30:
+        print(f"  {timeline_cfg['window_title']} 有效数据不足({len(df_clean)})，跳过。")
+        return
+
+    print(f"  {timeline_cfg['window_title']}: {len(df_clean)} 行, {df_clean['Original_SUB_ID'].nunique()} 人")
+
+    y = _safe_col(scale)
+    ybl = _safe_col(f'{scale}_BL')
+
+    formula1 = (f"{y} ~ Time * C(Group_MIND, Treatment('HC'))"
+                f" + Age_at_Visit + C(Sex) + Education")
+    formula2 = (f"{y} ~ Time * C(Group_MIND, Treatment('HC'))"
+                f" + Time * MIND_BL"
+                f" + {ybl} + Age_at_Visit + C(Sex) + Education")
+
+    summary_path = os.path.join(scale_dir, f"Statistical_Summary_{timeline_cfg['suffix']}.txt")
+
+    try:
+        mdf1 = _fit_lme(formula1, df_clean, 'Original_SUB_ID')
+        mdf2 = _fit_lme(formula2, df_clean, 'Original_SUB_ID')
+        print(f"    [{timeline_cfg['suffix']}] LME 拟合完成，结果已保存。")
+
+        df_clean['Fitted_G'] = mdf1.predict(df_clean)
+        df_clean['Fitted_M'] = mdf2.predict(df_clean)
+        df_plot, tick_map, tick_labels = _get_plot_df(df_clean, timeline_cfg, scale)
+        if len(df_plot) > 0:
+            preview_figs.append(_plot_group_progression(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels))
+            preview_figs.append(_plot_mind_prediction(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels))
+
+        sk = 'Time:MIND_BL'
+        slope_line = ""
+        if sk in mdf2.params:
+            beta = mdf2.params[sk]
+            se = mdf2.bse[sk]
+            pval = mdf2.pvalues[sk]
+            ci_lo, ci_hi = beta - 1.96 * se, beta + 1.96 * se
+            print(f"    [{timeline_cfg['suffix']}] [简单斜率] Time:MIND_BL  β={beta:.3f}  "
+                  f"95%CI=[{ci_lo:.3f},{ci_hi:.3f}]  p={pval:.3f}")
+            slope_line = (f"SIMPLE SLOPE (Time:MIND_BL):\n"
+                          f"  β={beta:.4f}  SE={se:.4f}  "
+                          f"95%CI=[{ci_lo:.4f},{ci_hi:.4f}]  p={pval:.4f}\n")
+
+        with open(summary_path, 'w') as f:
+            f.write(f"TIMELINE: {timeline_cfg['window_title']} ({timeline_cfg['window_label']})\n\n")
+            f.write("MODEL 1: GROUP TRAJECTORY DIFFERENCES (REF=HC)\n")
+            f.write(mdf1.summary().as_text() + "\n\n")
+            f.write("MODEL 2: MIND INDEPENDENT PREDICTION (CONTROLLED FOR GROUP)\n")
+            f.write(mdf2.summary().as_text() + "\n\n")
+            f.write(slope_line)
+
+    except Exception as e:
+        print(f"  {timeline_cfg['window_title']} LME 拟合失败，将自动切换 OLS 保底: {e}")
+        mdf_ols = smf.ols(formula2, data=df_clean).fit()
+        with open(os.path.join(scale_dir, f"OLS_Backup_Report_{timeline_cfg['suffix']}.txt"), 'w') as f:
+            f.write(f"TIMELINE: {timeline_cfg['window_title']} ({timeline_cfg['window_label']})\n\n")
+            f.write(mdf_ols.summary().as_text())
+
+        df_clean['Fitted_G'] = mdf_ols.predict(df_clean)
+        df_clean['Fitted_M'] = mdf_ols.predict(df_clean)
+        df_plot, tick_map, tick_labels = _get_plot_df(df_clean, timeline_cfg, scale)
+        if len(df_plot) > 0:
+            preview_figs.append(_plot_group_progression(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels))
+            preview_figs.append(_plot_mind_prediction(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels))
+
+
+
+def run_extended_pipeline():
+    if not os.path.exists(DATA_FILE):
+        print(f"找不到文件: {DATA_FILE}")
+        return
+
+    df_source = pd.read_csv(DATA_FILE)
+    preview_figs = []
+
     for scale in SCALES:
         cn_name = SCALE_NAMES.get(scale, scale)
         print(f"\n>>> 正在处理量表: {cn_name} ...")
-        df_raw[scale] = pd.to_numeric(df_raw[scale], errors='coerce')
+        df_source[scale] = pd.to_numeric(df_source[scale], errors='coerce')
         scale_dir = os.path.join(BASE_OUTPUT_DIR, scale)
         os.makedirs(scale_dir, exist_ok=True)
 
-        # 合并基线评分作为协变量（控制基线起点差异）
-        df_bl_score = (df_raw[df_raw['EVENT_ID_Clean'] == BL_EVENT]
-                       [['Original_SUB_ID', scale]]
-                       .copy())
-        df_bl_score.columns = ['Original_SUB_ID', f'{scale}_BL']
-        df_long = pd.merge(df_raw, df_bl_mind, on='Original_SUB_ID', how='inner')
-        df_long = pd.merge(df_long, df_bl_score, on='Original_SUB_ID', how='inner')
+        for timeline_cfg in TIMELINE_CONFIGS:
+            _run_single_timeline(df_source, scale, scale_dir, timeline_cfg, preview_figs)
 
-        cols_needed = [scale, 'Time', 'MIND_BL', f'{scale}_BL',
-                       'Age_at_Visit', 'Sex', 'Education', 'Group_MIND']
-        df_clean = df_long.dropna(subset=cols_needed).reset_index(drop=True)
-        df_clean['Group_MIND'] = pd.Categorical(
-            df_clean['Group_MIND'], categories=GROUP_ORDER, ordered=True
-        )
-
-        if len(df_clean) < 30:
-            print(f"  有效数据不足({len(df_clean)})，跳过。")
-            continue
-
-        # patsy 安全列名
-        y   = _safe_col(scale)
-        ybl = _safe_col(f'{scale}_BL')
-
-        # 双模型公式（与 step3c 完全一致，仅列名加了安全转义）
-        formula1 = (f"{y} ~ Time * C(Group_MIND, Treatment('HC'))"
-                    f" + Age_at_Visit + C(Sex) + Education")
-        formula2 = (f"{y} ~ Time * C(Group_MIND, Treatment('HC'))"
-                    f" + Time * MIND_BL"
-                    f" + {ybl} + Age_at_Visit + C(Sex) + Education")
-
-        try:
-            mdf1 = _fit_lme(formula1, df_clean, 'Original_SUB_ID')
-            mdf2 = _fit_lme(formula2, df_clean, 'Original_SUB_ID')
-
-            # 图1：四组纵向轨迹（模型1预测值）
-            plt.figure(figsize=FIG_SINGLE)
-            df_clean['Fitted_G'] = mdf1.predict(df_clean)
-            sns.lineplot(data=df_clean, x='Time', y='Fitted_G',
-                         hue='Group_MIND', hue_order=GROUP_ORDER,
-                         palette=GROUP_PALETTE,
-                         marker=MARKER, markersize=MARKERSIZE,
-                         errorbar=ERRORBAR, linewidth=LINEWIDTH)
-            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
-            plt.xticks(ticks_3pt, labels_3pt)
-            plt.title(f"Figure 1: {scale} Longitudinal Trajectory by Disease Groups",
-                      fontsize=FONT_TITLE)
-            plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
-            plt.savefig(os.path.join(scale_dir, "Fig1_Group_Progression.png"), dpi=DPI)
-            plt.close()
-
-            # 图2：MIND 均值±1SD 三水平预测轨迹（模型2）
-            m_val, s_val = df_clean['MIND_BL'].mean(), df_clean['MIND_BL'].std()
-            df_viz = df_clean.copy()
-            df_viz['Fitted_M'] = mdf2.predict(df_viz)
-            df_viz['MIND_Level'] = np.where(
-                df_viz['MIND_BL'] > m_val + s_val, MIND_LEVEL_ORDER[0],
-                np.where(df_viz['MIND_BL'] < m_val - s_val, MIND_LEVEL_ORDER[2],
-                         MIND_LEVEL_ORDER[1])
-            )
-            plt.figure(figsize=FIG_SINGLE)
-            sns.lineplot(data=df_viz, x='Time', y='Fitted_M',
-                         hue='MIND_Level', hue_order=MIND_LEVEL_ORDER,
-                         palette=CMAP_TRAJECTORY,
-                         marker='s', markersize=MARKERSIZE,
-                         errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK)
-            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
-            plt.xticks(ticks_3pt, labels_3pt)
-            plt.title(f"Figure 2: {scale}\nProgression Predicted by Baseline MIND",
-                      fontsize=FONT_TITLE)
-            plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
-            plt.savefig(os.path.join(scale_dir, "Fig2_MIND_Prediction.png"), dpi=DPI)
-            plt.close()
-
-            # 简单斜率摘要（Time:MIND_BL 系数）
-            sk = 'Time:MIND_BL'
-            slope_line = ""
-            if sk in mdf2.params:
-                beta  = mdf2.params[sk]
-                se    = mdf2.bse[sk]
-                pval  = mdf2.pvalues[sk]
-                ci_lo, ci_hi = beta - 1.96 * se, beta + 1.96 * se
-                print(f"    [简单斜率] Time:MIND_BL  β={beta:.3f}  "
-                      f"95%CI=[{ci_lo:.3f},{ci_hi:.3f}]  p={pval:.3f}")
-                slope_line = (f"SIMPLE SLOPE (Time:MIND_BL):\n"
-                              f"  β={beta:.4f}  SE={se:.4f}  "
-                              f"95%CI=[{ci_lo:.4f},{ci_hi:.4f}]  p={pval:.4f}\n")
-
-            # 保存统计报告
-            with open(os.path.join(scale_dir, "Statistical_Summary.txt"), 'w') as f:
-                f.write(f"MODEL 1: GROUP TRAJECTORY DIFFERENCES (REF=HC)\n")
-                f.write(mdf1.summary().as_text() + "\n\n")
-                f.write(f"MODEL 2: MIND INDEPENDENT PREDICTION (CONTROLLED FOR GROUP)\n")
-                f.write(mdf2.summary().as_text() + "\n\n")
-                f.write(slope_line)
-
-        except Exception as e:
-            print(f"  LME 拟合失败: {e}，执行 OLS 保底...")
-            mdf_ols = smf.ols(formula2, data=df_clean).fit()
-            with open(os.path.join(scale_dir, "OLS_Backup_Report.txt"), 'w') as f:
-                f.write(mdf_ols.summary().as_text())
-
-            # OLS 保底也画图（与 LME 分支一致）
-            df_clean['Fitted_G'] = mdf_ols.predict(df_clean)
-            plt.figure(figsize=FIG_SINGLE)
-            sns.lineplot(data=df_clean, x='Time', y='Fitted_G',
-                         hue='Group_MIND', hue_order=GROUP_ORDER,
-                         palette=GROUP_PALETTE,
-                         marker=MARKER, markersize=MARKERSIZE,
-                         errorbar=ERRORBAR, linewidth=LINEWIDTH)
-            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
-            plt.xticks(ticks_3pt, labels_3pt)
-            plt.title(f"Figure 1: {scale} Longitudinal Trajectory by Disease Groups",
-                      fontsize=FONT_TITLE)
-            plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
-            plt.savefig(os.path.join(scale_dir, "Fig1_Group_Progression.png"), dpi=DPI)
-            plt.close()
-
-            m_val, s_val = df_clean['MIND_BL'].mean(), df_clean['MIND_BL'].std()
-            df_viz = df_clean.copy()
-            df_viz['Fitted_M'] = mdf_ols.predict(df_viz)
-            df_viz['MIND_Level'] = np.where(
-                df_viz['MIND_BL'] > m_val + s_val, MIND_LEVEL_ORDER[0],
-                np.where(df_viz['MIND_BL'] < m_val - s_val, MIND_LEVEL_ORDER[2],
-                         MIND_LEVEL_ORDER[1])
-            )
-            plt.figure(figsize=FIG_SINGLE)
-            sns.lineplot(data=df_viz, x='Time', y='Fitted_M',
-                         hue='MIND_Level', hue_order=MIND_LEVEL_ORDER,
-                         palette=CMAP_TRAJECTORY,
-                         marker='s', markersize=MARKERSIZE,
-                         errorbar=ERRORBAR, linewidth=LINEWIDTH_THICK)
-            ticks_3pt, labels_3pt = get_time_ticks_and_labels(TIME_MAP_3PT, TIME_LABELS_3)
-            plt.xticks(ticks_3pt, labels_3pt)
-            plt.title(f"Figure 2: {scale} Progression Predicted by Baseline MIND",
-                      fontsize=FONT_TITLE)
-            plt.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
-            plt.savefig(os.path.join(scale_dir, "Fig2_MIND_Prediction.png"), dpi=DPI)
-            plt.close()
+    if PREVIEW_PLOTS and preview_figs:
+        plt.show(block=True)
+    else:
+        for fig in preview_figs:
+            plt.close(fig)
 
     print(f"\n>>> 5个新量表分析完成！结果存放至: {BASE_OUTPUT_DIR}")
 

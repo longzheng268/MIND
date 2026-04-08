@@ -214,6 +214,7 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 - [x] `config.py` 新增 `LME_RE_FORMULA = "~Time"` 和 `LME_METHODS`
 - [x] `step3e_lme_nonmotor_extended.py`：5 个非运动/精神症状量表，含 `_safe_col()` 处理特殊字符
 - [x] `step3f_saa_subgroup_analysis.py`：SAA 亚组敏感性——BL MIND 组间差异（ANCOVA）+ SAA 对临床变化速率的调节（LME）
+- [x] `step3e_lme_nonmotor_extended.py` / `step3f_saa_subgroup_analysis.py`：LME 部分现已支持 `FullTimeline`（BL~V12）与 `2Year`（BL/V04/V06）双时间窗，并复用 config 控制的晚期时间点可视化阈值（2026-04-09）
 
 ## 八、仍待确认
 

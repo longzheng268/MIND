@@ -165,7 +165,7 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 
 ## 六、扩展量表（GDS-15 / RBDSQ / NP1APAT / NP1FATG）
 
-**答：已在 `step3c_lme_2year_multiscale.py` 中统一处理，无需单独建模。**
+**答：已在 `step3c_lme_multiscale.py` 中统一处理，无需单独建模。**
 
 该脚本通过 `SCALES` 列表循环，对以下 6 个量表全部执行相同的双模型框架：
 
@@ -179,11 +179,12 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 | `NP1FATG` | 疲劳（Fatigue，非运动域子项） |
 
 每个量表独立输出：
-- `Fig1_Group_Progression.png` — 四组轨迹图（模型 1）
-- `Fig2_MIND_Prediction.png` — 三水平 MIND 预测轨迹图（模型 2）
-- `Statistical_Summary.txt` — 两个模型的完整系数表
+- `Fig1_Group_Progression_FullTimeline.png` / `Fig1_Group_Progression_2Year.png` — 四组轨迹图（模型 1）
+- `Fig2_MIND_Prediction_FullTimeline.png` / `Fig2_MIND_Prediction_2Year.png` — 三水平 MIND 预测轨迹图（模型 2）
+- `Statistical_Summary_FullTimeline.txt` / `Statistical_Summary_2Year.txt` — 两个模型的完整系数表
+- `OLS_Backup_Report_FullTimeline.txt` / `OLS_Backup_Report_2Year.txt` — LME 失败时的保底输出
 
-结果存放在 `./MIND_Research_Results/{量表名}/` 下。
+结果存放在 `./MIND_Research_Results/{量表名}/` 下；其中 full timeline（BL~V12）可视化会复用 `config.py` 的 `STEP3_FULL_MIN_PLOT_N` 阈值，自动跳过样本过稀的晚期时间点，但不影响模型与报告生成。
 
 ---
 
@@ -207,9 +208,10 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 
 ## 七、实现进度（对应 step3 脚本）
 
-- [x] `step3c_lme_2year_multiscale.py`：加入 `re_formula=LME_RE_FORMULA`（三级降级，来自 config.py）
-- [x] `step3c_lme_2year_multiscale.py`：`formula2` 同时包含 `Time * Group` 和 `Time * MIND_BL`
-- [x] `step3c_lme_2year_multiscale.py`：简单斜率（Time:MIND_BL β/SE/95%CI/p）输出到 Statistical_Summary.txt
+- [x] `step3c_lme_multiscale.py`：加入 `re_formula=LME_RE_FORMULA`（三级降级，来自 config.py）
+- [x] `step3c_lme_multiscale.py`：现已支持 `FullTimeline`（BL~V12）与 `2Year`（BL/V04/V06）双时间窗，并复用 config 控制的晚期时间点可视化阈值与阻塞预览（2026-04-12）
+- [x] `step3c_lme_multiscale.py`：`formula2` 同时包含 `Time * Group` 和 `Time * MIND_BL`
+- [x] `step3c_lme_multiscale.py`：简单斜率（Time:MIND_BL β/SE/95%CI/p）输出到 Statistical_Summary.txt
 - [x] `step3_lme_updrs.py`：重构为双模型结构，补充 `C(Group_MIND)` 消除疾病阶段混淆
 - [x] `config.py` 新增 `LME_RE_FORMULA = "~Time"` 和 `LME_METHODS`
 - [x] `step3e_lme_nonmotor_extended.py`：5 个非运动/精神症状量表，含 `_safe_col()` 处理特殊字符

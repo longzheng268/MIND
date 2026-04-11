@@ -2,12 +2,14 @@
 
 - `step2b_connectome_viz.py` 已标记为 legacy visualization script，不再作为主分析链路的核心结果来源。
 - `step3_lme_updrs.py` 已适配当前长表数据中的 `UPDRSIII/UPDRSIII.1` 命名，能够在 `mind` 环境中正常运行。
-- `step3c_lme_2year_multiscale.py` 已增加 `UPDRS3` 别名映射，能够兼容当前 CSV 列名并完成 6 个量表分析。
+- `step3c_lme_multiscale.py` 已增加 `UPDRS3` 别名映射，能够兼容当前 CSV 列名并完成 6 个量表分析。
 - `step3d_baseline_regression.py` 已从旧宽表假设切换为基于当前长表动态整理 BL/V04/V06/V10/V12 后再执行回归。
 - `step3d_baseline_regression.py` 当前主输出聚焦 `V10` 与 `V12` 两组图片，并恢复每组 Figure 1 / Figure 2 成对结果。
 - `step3d_baseline_regression.py` Aim 3 已加入退化样本保护，V12 非 HC 子样本不足时会自动跳过，避免出现 `R²=1.0000` 假完美结果。
 - `step3d_baseline_regression.py` 绘图风格现已向 Step2/Step3 统一收敛，图幅、字体、grid、stripplot 样式、标题编号均受 `config.py` 监管。
 - `step3d_baseline_regression.py` 现会先保存 PNG，再统一阻塞预览弹窗。
+- `step3c_lme_multiscale.py` 现已支持 `FullTimeline` 与 `2Year` 双时间窗输出，图标题、xtick、文件命名、阻塞预览和晚期时间点可视化阈值统一受 `config.py` 监管。
+- `step3c_lme_multiscale.py` 当前每个量表目录可同时保留 `FullTimeline` / `2Year` 的 Figure 1、Figure 2、统计摘要与 OLS 保底报告，不再互相覆盖。
 - `step3e_lme_nonmotor_extended.py` 现已支持 `FullTimeline` 与 `2Year` 双时间窗输出，图标题、xtick、文件命名和晚期时间点可视化阈值统一受 `config.py` 监管。
 - `step3f_saa_subgroup_analysis.py` 的分析 2（LME）现已支持 `FullTimeline` 与 `2Year` 双时间窗输出；分析 1 仍保持 BL 基线 ANCOVA。
 - `step3f_saa_subgroup_analysis.py` 已增加 `UPDRS3` 别名映射，能够兼容当前 CSV 中的 `UPDRSIII/UPDRSIII.1`。
@@ -48,7 +50,7 @@
 |---|---|---|
 | longitudinal_mind_prediction.py | step3a_lme_full_timepoints.py | 全时间点（BL~V12）LME |
 | longitudinal_mind_prediction-v2-v4.py | step3b_lme_2year_updrs.py | 2年随访 UPDRS-III LME |
-| longitudinal_mind_prediction-v2-v4-muli.py | step3c_lme_2year_multiscale.py | 2年随访多量表 LME |
+| longitudinal_mind_prediction-v2-v4-muli.py | step3c_lme_multiscale.py | 多量表 LME（现支持 FullTimeline + 2Year） |
 | MIND_Scientific_Analysis.py | step3d_baseline_regression.py | 基线 MIND 回归预测（Aim1-3） |
 
 ### Step 4 — ML 预测模型
@@ -105,7 +107,7 @@ Step 2 — 组间统计差异
 
 Step 3 — LME 纵向预测
   step3_lme_updrs.py                   ← [合并] 全时间点+2年 UPDRS-III（原2个→1个）
-  step3c_lme_2year_multiscale.py       ← 2年多量表（独立）
+  step3c_lme_multiscale.py             ← 多量表 LME（独立，现支持 FullTimeline + 2Year）
   step3d_baseline_regression.py        ← 基线回归预测（独立）
 
 Step 4 — ML 预测（留空备用）

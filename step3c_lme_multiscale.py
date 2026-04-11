@@ -8,16 +8,13 @@ from config import *
 
 apply_style()
 
-# 在 step3c_lme_multiscale.py 框架基础上扩展，纳入 5 个新量表：
-#   ESS_all（嗜睡）、SCOPA_AUT_all（自主神经障碍）、
-#   S-AI（状态焦虑）、T-AI（特质焦虑）、UPSIT_PRCNTGE（嗅觉）
-# 其中 S-AI / T-AI 含特殊字符（-），patsy 需用 Q() 包裹
-# 临床意义：帕金森病非运动症状 & 精神症状评估
+# 分析框架来源：research_design_lme_mind.md
+# 参数（优化器、随机效应公式、图幅、颜色等）全部来自 config.py
 
+# --- 路径与量表列表 ---
 DATA_FILE       = './scale/MIND_baseline_with_followup_V04_V12.csv'
 BASE_OUTPUT_DIR = './MIND_Research_Results/'
 PREVIEW_PLOTS   = True
-SCALES = ['ESS_all', 'SCOPA_AUT_all', 'S-AI', 'T-AI', 'UPSIT_PRCNTGE']
 TIMELINE_CONFIGS = [
     {
         'key': 'full',
@@ -36,22 +33,18 @@ TIMELINE_CONFIGS = [
         'suffix': '2Year',
     },
 ]
-
-# 量表中文对照（报告用）
-SCALE_NAMES = {
-    'ESS_all':       '嗜睡量表 (Epworth Sleepiness Scale)',
-    'SCOPA_AUT_all': '自主神经障碍问卷 (SCOPA-AUT)',
-    'S-AI':          '状态焦虑 (State Anxiety Inventory)',
-    'T-AI':          '特质焦虑 (Trait Anxiety Inventory)',
-    'UPSIT_PRCNTGE': '嗅觉功能 (UPSIT 百分比)',
+# 所有量表统一循环处理（研究设计第六节）
+SCALES = ['UPDRS3', 'MoCA', 'GDS15_all', 'RBDSQ_all', 'NP1APAT', 'NP1FATG']
+SCALE_COLUMN_ALIASES = {
+    'UPDRS3': ['UPDRS3', 'UPDRSIII', 'UPDRSIII.1'],
 }
 
 
-def _safe_col(name):
-    """将列名转为 patsy 安全形式（含 - 等特殊字符时用 Q() 包裹）。"""
-    if any(c in name for c in '- + ~ | * / % ^ ! @ # $ &'.split()):
-        return f'Q("{name}")'
-    return name
+def _get_scale_col(df, scale):
+    for col in SCALE_COLUMN_ALIASES.get(scale, [scale]):
+        if col in df.columns:
+            return col
+    raise KeyError(f"未找到量表列: {scale}")
 
 
 def _fit_lme(formula, data, groups_col):
@@ -74,7 +67,7 @@ def _fit_lme(formula, data, groups_col):
     raise ValueError("所有优化器均失败，转 OLS 保底")
 
 
-def _get_plot_df(df_clean, timeline_cfg, label_prefix):
+def _get_plot_df(df_clean, timeline_cfg, scale):
     if timeline_cfg['key'] != 'full':
         return df_clean.copy(), timeline_cfg['time_map'], timeline_cfg['time_labels']
 
@@ -82,7 +75,7 @@ def _get_plot_df(df_clean, timeline_cfg, label_prefix):
     kept_events = [event for event in TIMEPOINTS_FULL if visit_counts.get(event, 0) >= STEP3_FULL_MIN_PLOT_N]
     if kept_events != TIMEPOINTS_FULL:
         dropped = [event for event in TIMEPOINTS_FULL if event not in kept_events]
-        print(f"    [{label_prefix}] 可视化最小样本阈值={STEP3_FULL_MIN_PLOT_N}，不绘制: {dropped}")
+        print(f"    [{scale}][{timeline_cfg['suffix']}] 可视化最小样本阈值={STEP3_FULL_MIN_PLOT_N}，不绘制: {dropped}")
     kept_map = {event: TIME_MAP_FULL[event] for event in kept_events}
     kept_labels = [TIME_LABELS_FULL[TIMEPOINTS_FULL.index(event)] for event in kept_events]
     return df_clean[df_clean['EVENT_ID_Clean'].isin(kept_events)].copy(), kept_map, kept_labels
@@ -136,7 +129,6 @@ def _plot_mind_prediction(df_plot, scale, scale_dir, timeline_cfg, tick_map, tic
     return fig
 
 
-
 def _run_single_timeline(df_source, scale, scale_dir, timeline_cfg, preview_figs):
     df_raw = add_time_from_event(df_source.copy(), timeline_cfg['time_map'])
 
@@ -145,12 +137,16 @@ def _run_single_timeline(df_source, scale, scale_dir, timeline_cfg, preview_figs
                   .copy())
     df_bl_mind.columns = ['Original_SUB_ID', 'MIND_BL']
 
+    scale_col = _get_scale_col(df_raw, scale)
+    df_raw[scale_col] = pd.to_numeric(df_raw[scale_col], errors='coerce')
+
     df_bl_score = (df_raw[df_raw['EVENT_ID_Clean'] == BL_EVENT]
-                   [['Original_SUB_ID', scale]]
+                   [['Original_SUB_ID', scale_col]]
                    .copy())
     df_bl_score.columns = ['Original_SUB_ID', f'{scale}_BL']
     df_long = pd.merge(df_raw, df_bl_mind, on='Original_SUB_ID', how='inner')
     df_long = pd.merge(df_long, df_bl_score, on='Original_SUB_ID', how='inner')
+    df_long[scale] = df_long[scale_col]
 
     cols_needed = [scale, 'Time', 'MIND_BL', f'{scale}_BL',
                    'Age_at_Visit', 'Sex', 'Education', 'Group_MIND']
@@ -160,19 +156,16 @@ def _run_single_timeline(df_source, scale, scale_dir, timeline_cfg, preview_figs
     )
 
     if len(df_clean) < 30:
-        print(f"  {timeline_cfg['window_title']} 有效数据不足({len(df_clean)})，跳过。")
+        print(f"  {scale} [{timeline_cfg['window_title']}] 有效数据不足({len(df_clean)})，跳过。")
         return
 
-    print(f"  {timeline_cfg['window_title']}: {len(df_clean)} 行, {df_clean['Original_SUB_ID'].nunique()} 人")
+    print(f"  {scale} [{timeline_cfg['window_title']}]: {len(df_clean)} 行, {df_clean['Original_SUB_ID'].nunique()} 人")
 
-    y = _safe_col(scale)
-    ybl = _safe_col(f'{scale}_BL')
-
-    formula1 = (f"{y} ~ Time * C(Group_MIND, Treatment('HC'))"
+    formula1 = (f"{scale} ~ Time * C(Group_MIND, Treatment('HC'))"
                 f" + Age_at_Visit + C(Sex) + Education")
-    formula2 = (f"{y} ~ Time * C(Group_MIND, Treatment('HC'))"
+    formula2 = (f"{scale} ~ Time * C(Group_MIND, Treatment('HC'))"
                 f" + Time * MIND_BL"
-                f" + {ybl} + Age_at_Visit + C(Sex) + Education")
+                f" + {scale}_BL + Age_at_Visit + C(Sex) + Education")
 
     summary_path = os.path.join(scale_dir, f"Statistical_Summary_{timeline_cfg['suffix']}.txt")
 
@@ -210,7 +203,7 @@ def _run_single_timeline(df_source, scale, scale_dir, timeline_cfg, preview_figs
             f.write(slope_line)
 
     except Exception as e:
-        print(f"  {timeline_cfg['window_title']} LME 拟合失败，将自动切换 OLS 保底: {e}")
+        print(f"  {scale} [{timeline_cfg['window_title']}] LME 拟合失败，将自动切换 OLS 保底: {e}")
         mdf_ols = smf.ols(formula2, data=df_clean).fit()
         with open(os.path.join(scale_dir, f"OLS_Backup_Report_{timeline_cfg['suffix']}.txt"), 'w') as f:
             f.write(f"TIMELINE: {timeline_cfg['window_title']} ({timeline_cfg['window_label']})\n\n")
@@ -224,8 +217,7 @@ def _run_single_timeline(df_source, scale, scale_dir, timeline_cfg, preview_figs
             preview_figs.append(_plot_mind_prediction(df_plot, scale, scale_dir, timeline_cfg, tick_map, tick_labels))
 
 
-
-def run_extended_pipeline():
+def run_research_pipeline():
     if not os.path.exists(DATA_FILE):
         print(f"找不到文件: {DATA_FILE}")
         return
@@ -234,9 +226,7 @@ def run_extended_pipeline():
     preview_figs = []
 
     for scale in SCALES:
-        cn_name = SCALE_NAMES.get(scale, scale)
-        print(f"\n>>> 正在处理量表: {cn_name} ...")
-        df_source[scale] = pd.to_numeric(df_source[scale], errors='coerce')
+        print(f"\n>>> 正在处理量表: {scale} ...")
         scale_dir = os.path.join(BASE_OUTPUT_DIR, scale)
         os.makedirs(scale_dir, exist_ok=True)
 
@@ -249,8 +239,8 @@ def run_extended_pipeline():
         for fig in preview_figs:
             plt.close(fig)
 
-    print(f"\n>>> 5个新量表分析完成！结果存放至: {BASE_OUTPUT_DIR}")
+    print(f"\n>>> 所有量表分析完成！结果存放至: {BASE_OUTPUT_DIR}")
 
 
 if __name__ == "__main__":
-    run_extended_pipeline()
+    run_research_pipeline()

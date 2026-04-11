@@ -1,6 +1,6 @@
 # MIND Pipeline — Session Progress Notes
 
-> 最近更新：2026-04-09
+> 最近更新：2026-04-12
 > 用途：跨会话工作记忆，记录当前代码状态、已完成工作和待办事项
 
 ---
@@ -24,7 +24,8 @@
 - `step2b_network_ancova_7nets.py`：已成功跑通 7-network ANCOVA，得到 FDR 校正结果
 - `step2b_connectome_viz.py`：已标记为 legacy visualization script，暂不作为主分析链路使用
 - `step3_lme_updrs.py`：兼容 `UPDRS3/UPDRSIII/UPDRSIII.1` 列名，已在 `mind` 环境跑通全时间点与 2 年模型
-- `step3c_lme_2year_multiscale.py`：新增量表别名映射，已兼容 `UPDRSIII` 并在 `mind` 环境跑通
+- `step3c_lme_multiscale.py`：现已支持 `FullTimeline`（`BL/V04/V06/V08/V10/V12`）与 `2Year`（`BL/V04/V06`）双时间窗输出，图标题、xtick、保存命名、阻塞预览和晚期时间点可视化阈值统一受 `config.py` 控制
+- `step3c_lme_multiscale.py`：每个量表目录现可同时保留 `FullTimeline` 与 `2Year` 的 Figure 1 / Figure 2 / Statistical Summary / OLS Backup 输出，不再互相覆盖
 - `step3d_baseline_regression.py`：由旧宽表假设改为从当前长表动态整理 BL/V04/V06/V10/V12 后再回归，已在 `mind` 环境跑通
 - `step3d_baseline_regression.py`：当前主输出聚焦 `V10` 与 `V12` 两组图片，并恢复每组“图一（组间箱线+散点）+ 图二（MIND 回归图）”的成对结果
 - `step3d_baseline_regression.py`：Aim 3 现已加入退化样本保护；当非 HC 子样本过少、`SAA_Status` 无变异或残差自由度不足时，自动跳过增量价值分析，避免出现 `R²=1.0000` 这类假完美结果
@@ -42,9 +43,9 @@
   - 模型 A、模型 B 均成功运行
   - `Time:MIND_BL` 当前未见显著
   - 组别时间交互中，`prodromal_SAA+` 与 `PD_SAA+` 存在显著项
-- `step3c_lme_2year_multiscale.py`
-  - 6 个量表均完成分析
-  - `Time:MIND_BL`：UPDRS3 p=0.381，MoCA p=0.722，GDS15_all p=0.078，RBDSQ_all p=0.067，NP1APAT p=0.983，NP1FATG p=0.293
+- `step3c_lme_multiscale.py`
+  - 6 个量表现已同时输出 `FullTimeline` 与 `2Year` 两套结果
+  - full timeline 可视化会按 `STEP3_FULL_MIN_PLOT_N` 自动过滤过稀的晚期随访点，避免误导性折线
 - `step3d_baseline_regression.py`
   - 当前主输出聚焦 `V10` 与 `V12` 两组图片
   - 每组恢复两张图：`Aim2_Group_Delta_Boxplot_{V10/V12}.png` + `Aim2_MIND_Prediction_{V10/V12}.png`

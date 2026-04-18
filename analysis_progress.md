@@ -28,7 +28,7 @@ Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
 - `step3d_baseline_regression.py` Aim 3 now skips degenerate non-HC subsets instead of reporting spurious perfect `R²`.
 - `step3e_lme_nonmotor_extended.py` now supports both `FullTimeline` and `2Year` outputs under config-governed time definitions, labels, and sparse-visit plotting thresholds.
 - `step3f_saa_subgroup_analysis.py` analysis 2 now supports both `FullTimeline` and `2Year` LME outputs, while analysis 1 remains BL-only ANCOVA.
-- `step4_ml/step4_ml_prediction.py` now resolves the `UPDRS3` alias against the current CSV and runs successfully.
+- `step4_ml/step4_ml_prediction.py` now pivots from a simple SAA-status prototype to an Aim 3 incremental-value framework that compares Model A/B/C/D across Parkinson-spectrum subsets using available baseline clinical, SAA, and MIND modules.
 - `config.py` now governs the actual full Step 3 timeline as `BL/V04/V06/V08/V10/V12` (no `V02` in the current dataset), and plot titles/xticks are generated from config.
 
 ### Latest Step 3 findings (2026-04-09)
@@ -51,6 +51,10 @@ Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
 - `step4_ml/step4_ml_prediction.py`
   - Regression: MoCA Δ and UPDRS3 Δ both show weak predictive performance; best model is ElasticNet for both tasks.
   - Classification: SAA+ vs SAA- reaches best AUC with SVC (`~0.704`) and best accuracy with LogisticRegression (`~0.705`).
+
+- `step4_ml/step4_ml_prediction.py`
+  - Step 4 is being refactored toward Aim 3 incremental model comparison instead of predicting SAA status itself.
+  - The current implementation targets Parkinson-spectrum subsets, fixed-window `UPDRS3` / `MoCA` progression deltas, and Model A/B/C/D comparisons; conventional MRI, SAA kinetics, and phenoconversion remain unavailable in the present repo state.
 
 ---
 

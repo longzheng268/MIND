@@ -37,6 +37,60 @@
 
 ---
 
+## Aim 3 推荐主方案（知识库更新，2026-04-12）
+
+- **建模对象**：预测模型不纳入 HC；主分析纳入 `prodromal/SAA-`、`prodromal/SAA+`、`PD/SAA+`，`PD/SAA-` 作为探索性 discordant 组补充分析。
+- **三层样本策略**：
+  - 全连续谱主模型：prodromal + PD
+  - SAA 阳性限定模型：`prodromal/SAA+` + `PD/SAA+`
+  - prodromal 子集模型：评估前驱期恶化与 phenoconversion 风险
+- **结局设计**：以连续结局为主、二分类结局为辅、时间事件结局为扩展。
+  - 连续主结局：24 个月运动进展斜率（优先 `UPDRS3`/`UPDRS total` 年化变化或 LME 经验贝叶斯 slope），以及 24–36 个月认知进展斜率（优先 `MoCA` 或认知复合分数）
+  - 二分类次级结局：快运动进展、快认知下降、快非运动恶化
+  - 事件结局：prodromal → PD phenoconversion 时间；事件数不足时降级为固定时间窗二分类
+- **输入模块分层**：
+  - 固定协变量：年龄、性别、教育、病程、TIV、中心/扫描仪、药物状态或 `LEDD`、疾病阶段、必要时基线至末次随访间隔
+  - baseline clinical：`UPDRS3/total`、`MoCA`/认知复合分数、非运动复合分数、RBD、`SCOPA-AUT`、`ESS`、情绪量表等
+  - SAA 模块：主分析优先 `SAA_Status` 二元状态；kinetic 参数仅作扩展
+  - MIND 模块：压缩为 10–15 个稳定 summary features，至少包含 global mean MIND，可加入网络级平均值、训练折内 nodal PCA 主成分、预定义高风险 summary score
+  - traditional MRI comparator：平均皮层厚度、总灰质体积、少量预定义 ROI 厚度/体积
+- **固定模型层级（每个主要结局都比较）**：
+  - Model A：baseline clinical only
+  - Model B：baseline clinical + SAA
+  - Model C：baseline clinical + MIND
+  - Model D：baseline clinical + SAA + MIND（Aim 3 核心模型）
+  - Model E：baseline clinical + conventional MRI
+  - Model F：baseline clinical + SAA + conventional MRI + MIND
+- **模型选择原则**：
+  - 主模型：`Elastic Net`（连续结局用线性回归，二分类结局用 logistic regression）
+  - 挑战模型：`XGBoost`，用于检验非线性/阈值效应/高阶交互
+  - 事件结局主模型：`Cox-Elastic Net`；随机生存森林仅作探索性补充
+- **连续结局推荐流程**：
+  - 第一步：先在纵向数据中建立不含影像预测因子的 LME，提取个体经验贝叶斯 slope
+  - 第二步：以 slope 为目标做 `Elastic Net` / `XGBoost`，并按 Model A–F 递进比较
+- **防止信息泄漏**：缺失值插补、标准化、PCA、site harmonization、特征选择、调参必须全部限制在训练折内完成。
+- **验证策略**：
+  - 优先：预留 20%–25% 独立测试集；若可能，优先时间切分或留中心做准外部验证
+  - 训练阶段：nested CV（外层 5-fold，内层 5-fold），必要时 repeated nested CV / bootstrap CI
+- **性能与增量价值判定**：
+  - 连续结局：`R²`、`RMSE`、`MAE`、`ΔR²`、`ΔRMSE`
+  - 二分类：`AUROC`、`AUPRC`、`Brier score`、校准截距/斜率、决策曲线
+  - 时间事件：`C-index`、time-dependent AUC、integrated Brier score
+  - 核心判断：比较 Model B→D、或不含 MIND → 含 MIND 的模型，在区分度、误差、校准和净获益上是否同步改善
+- **解释性输出**：
+  - `Elastic Net`：标准化回归系数 + 被保留变量
+  - `XGBoost`：`SHAP summary plot` + 关键特征排序
+  - 若 MIND 稳定入模，应进一步展示最关键的网络级/节点级 MIND 指标及其生物学解释
+- **敏感性分析**：
+  - 全连续谱 / SAA 阳性限定 / prodromal 子集分别重复
+  - 更换运动或认知结局定义
+  - 调整 MIND feature 压缩策略
+  - 剔除 `PD/SAA-` 等 discordant 个体
+  - 在可行时加入 conventional MRI、SAA kinetic 等扩展模块
+- **当前推荐主线**：在 prodromal + PD 个体中，以 24 个月运动斜率和 24–36 个月认知斜率为主要结局，以 `Elastic Net` 为主模型、`XGBoost` 为挑战模型，使用 Model A–F、nested CV、独立测试/准外部验证、校准分析与决策曲线，系统评估 MIND 在 baseline clinical 与 SAA 之上的增量预测价值；同时在 SAA 阳性限定样本中重复，作为最直接回应课题核心问题的关键补充分析。
+
+---
+
 ## 最新 Step 3 运行摘要（2026-04-09）
 
 - `step3_lme_updrs.py`
@@ -56,8 +110,8 @@
   - 基线 SAA+ vs SAA-：Global/Visual/Dorsal/Ventral/Limbic/Frontoparietal/Default 显著，Somatomotor 不显著
   - SAA 亚组 LME：MoCA 与 UPDRS3 的 `Time:MIND_BL` 和 `Time:SAA_Status` 交互当前均未达显著
 - `step4_ml/step4_ml_prediction.py`
-  - 回归任务：MoCA Δ 最佳为 ElasticNet（R²≈0.001），UPDRS3 Δ 最佳也为 ElasticNet（R²≈-0.011），当前预测性能有限
-  - 分类任务：SAA+ vs SAA- 最佳为 SVC，AUC≈0.704，LogisticRegression 准确率≈0.705
+  - 当前正从“预测 SAA 状态”的原型脚本重构为 Aim 3 增量价值评估框架，主线改为比较 baseline clinical、SAA 与 MIND 模块对 `UPDRS3` / `MoCA` 进展结局的递进贡献
+  - 现阶段优先实现 Model A/B/C/D、Parkinson-spectrum 子集分析、固定时间窗连续结局与 fast-progressor 次级分类；conventional MRI、SAA kinetic 与 phenoconversion 因当前仓库缺少可直接建模变量而暂不运行
 
 ---
 

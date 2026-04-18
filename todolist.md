@@ -6,6 +6,11 @@
 
 ## Step 4 — 机器学习预测模型（持续完善）
 
+- [x] `step4_ml/step4_ml_prediction.py`：按 Aim 3 递进模型框架重构主线（clinical / SAA / MIND，2026-04-12）
+- [ ] `step4_ml/step4_ml_prediction.py`：加入显式训练集 / 测试集 7:3 划分与 data 目录持久化
+- [ ] `step4_ml/step4_ml_prediction.py`：补充 conventional MRI comparator（若数据就绪）
+- [ ] `step4_ml/step4_ml_prediction.py`：补充 SAA kinetic 参数模块（若数据就绪）
+- [ ] `step4_ml/step4_ml_prediction.py`：补充 phenoconversion / Cox 生存分析（若事件标签就绪）
 - [ ] 特征工程：从基线 MIND 矩阵提取节点强度、连边上三角、网络指标
 - [ ] 模型选型：随机森林 / SVR / Elastic Net 回归预测 UPDRS-III 斜率
 - [ ] 交叉验证框架（Leave-One-Out 或 5-fold）

@@ -1,47 +1,58 @@
+import json
 import os
 import sys
+from pathlib import Path
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import statsmodels.formula.api as smf
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.svm import SVR, SVC
-from sklearn.linear_model import ElasticNet, LogisticRegression
-from sklearn.model_selection import cross_val_score, RepeatedKFold, StratifiedKFold
-from sklearn.inspection import permutation_importance
-from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import ElasticNet
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import GridSearchCV, KFold, train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
 from config import *
 
 apply_style()
 
-# --- Step 4：机器学习预测模型 ---
-# 回归：用基线 MIND 网络特征预测 2 年内临床量表变化量（Δ = V06 - BL）
-# 分类：用基线 MIND 网络特征预测 SAA+ vs SAA-
-# 输入特征：8 维 MIND 网络指标 + 3 维人口学变量 = 11 维
-# 仅 SAA+ 和 SAA-（prodromal 亚组）
+# Aim 3: incremental predictive value in the Parkinson spectrum only.
+# The pipeline uses a fixed 70/30 subject split, trains models only on the
+# training set, and reports final performance on the held-out test set.
 
-DATA_FILE       = './scale/MIND_baseline_with_followup_V04_V12.csv'
-BASE_OUTPUT_DIR = './MIND_Research_Results/ML_Prediction/'
-ML_REGRESSION_ENDPOINTS = [
-    {'event': 'V10', 'label': 'Baseline to Year 4', 'suffix': 'V10'},
-    {'event': 'V12', 'label': 'Baseline to Year 5', 'suffix': 'V12'},
+DATA_FILE = './scale/MIND_baseline_with_followup_V04_V12.csv'
+BASE_OUTPUT_DIR = './MIND_Research_Results/ML_Prediction/Aim3_Incremental/'
+SPLIT_OUTPUT_DIR = './data/step4_ml/'
+SPLIT_FILE = os.path.join(SPLIT_OUTPUT_DIR, 'aim3_train_test_split.csv')
+SPLIT_META_FILE = os.path.join(SPLIT_OUTPUT_DIR, 'aim3_train_test_split_meta.json')
+
+RANDOM_STATE = 42
+TRAIN_RATIO = 0.7
+TEST_RATIO = 0.3
+TRAIN_CV_SPLITS = 5
+MIN_MODEL_N = 30
+
+OUTCOME_WINDOWS = [
+    {'event': 'V06', 'label': 'Baseline to V06', 'suffix': 'V06'},
+    {'event': 'V10', 'label': 'Baseline to V10', 'suffix': 'V10'},
+    {'event': 'V12', 'label': 'Baseline to V12', 'suffix': 'V12'},
 ]
-ML_MIN_REGRESSION_N = 30
 
-# 网络级别特征列
+TARGET_SCALES = ['UPDRS3', 'MoCA']
+
 MIND_COLS = [
     'MIND_Sig_Index', 'MIND_Visual', 'MIND_Somatomotor',
     'MIND_Dorsal_Attention', 'MIND_Ventral_Attention',
     'MIND_Limbic', 'MIND_Frontoparietal', 'MIND_Default',
 ]
 DEMO_COLS = ['Age_at_Visit', 'Sex', 'Education']
-FEATURE_COLS = MIND_COLS + DEMO_COLS
+CLINICAL_CANDIDATES = [
+    'UPDRS3', 'MoCA', 'GDS15_all', 'RBDSQ_all', 'NP1APAT', 'NP1FATG',
+    'ESS_all', 'SCOPA_AUT_all', 'LEDD_Baseline',
+]
 
-# 特征英文名（图表用）
 FEAT_SHORT = {
     'MIND_Sig_Index': 'Global MIND',
     'MIND_Visual': 'Visual',
@@ -54,47 +65,141 @@ FEAT_SHORT = {
     'Age_at_Visit': 'Age',
     'Sex': 'Sex',
     'Education': 'Education',
+    'LEDD_Baseline': 'LEDD',
+    'GDS15_all': 'GDS-15',
+    'RBDSQ_all': 'RBDSQ',
+    'NP1APAT': 'Apathy',
+    'NP1FATG': 'Fatigue',
+    'ESS_all': 'ESS',
+    'SCOPA_AUT_all': 'SCOPA-AUT',
+    'SAA_Binary': 'SAA Status',
 }
 
-# 交叉验证参数
-N_SPLITS = 5
-N_REPEATS = 3
-RANDOM_STATE = 42
-SCALE_COLUMN_ALIASES = {
-    'MoCA': ['MoCA'],
-    'UPDRS3': ['UPDRS3', 'UPDRSIII', 'UPDRSIII.1'],
-}
+SUMMARY_NOTES = [
+    'Model E (conventional MRI comparator) not run: no ready-to-use conventional MRI feature set is wired in the current repository.',
+    'Model F (clinical + SAA + conventional MRI + MIND) not run: conventional MRI comparator variables are unavailable in the current dataset/pipeline.',
+    'SAA kinetic parameter module not run: only binary SAA status is available in the current analysis table.',
+    'Phenoconversion / Cox survival analysis not run: no event-time phenoconversion labels are wired into the present pipeline.',
+]
+
+MODEL_ORDER = [
+    'Model_A_Clinical',
+    'Model_B_Clinical_SAA',
+    'Model_C_Clinical_MIND',
+    'Model_D_Clinical_SAA_MIND',
+]
 
 
 def _get_scale_col(df, scale):
-    for col in SCALE_COLUMN_ALIASES.get(scale, [scale]):
+    aliases = {
+        'MoCA': ['MoCA'],
+        'UPDRS3': ['UPDRS3', 'UPDRSIII', 'UPDRSIII.1'],
+    }
+    for col in aliases.get(scale, [scale]):
         if col in df.columns:
             return col
-    raise KeyError(f"未找到量表列: {scale}")
+    raise KeyError(f'Could not find scale column: {scale}')
 
 
-def _load_bl_features():
-    """加载 BL 时间点的特征数据（仅 SAA+ 和 SAA-）。"""
-    df = pd.read_csv(DATA_FILE)
-    df_bl = df[df['EVENT_ID'] == BL_EVENT].copy()
-    df_bl = df_bl[df_bl['SAA_Status'].isin(['Positive', 'Negative'])].copy()
-    df_bl['SAA_Status'] = pd.Categorical(
-        df_bl['SAA_Status'], categories=['Negative', 'Positive'], ordered=True
-    )
-    return df_bl
+def _available_clinical_cols(df):
+    available = []
+    for col in CLINICAL_CANDIDATES:
+        if col == 'UPDRS3':
+            try:
+                available.append(_get_scale_col(df, 'UPDRS3'))
+            except KeyError:
+                continue
+        elif col in df.columns:
+            available.append(col)
+    return list(dict.fromkeys(available))
+
+
+def _load_raw_dataframe():
+    if not os.path.exists(DATA_FILE):
+        raise FileNotFoundError(f'Missing data file: {DATA_FILE}')
+    return pd.read_csv(DATA_FILE)
+
+
+def _encode_binary_columns(df):
+    out = df.copy()
+    if 'Sex' in out.columns:
+        sex_series = out['Sex']
+        if pd.api.types.is_numeric_dtype(sex_series):
+            out['Sex'] = sex_series
+        else:
+            out['Sex'] = sex_series.map({'M': 1, 'F': 0, 'Male': 1, 'Female': 0, '1': 1, '0': 0})
+    if 'SAA_Status' in out.columns:
+        out['SAA_Binary'] = out['SAA_Status'].map({'Negative': 0, 'Positive': 1})
+    return out
+
+
+def _prepare_baseline_table(df_raw):
+    df_bl = df_raw[df_raw['EVENT_ID'] == BL_EVENT].copy()
+    df_bl = df_bl[df_bl['Group_MIND'] != 'HC'].copy()
+    df_bl = df_bl[df_bl['Group_MIND'].isin(['prodromal_SAA-', 'prodromal_SAA+', 'PD_SAA+'])].copy()
+    df_bl = df_bl[df_bl['SAA_Status'].isin(['Negative', 'Positive'])].copy()
+    df_bl = df_bl.drop_duplicates(subset='Original_SUB_ID', keep='first').reset_index(drop=True)
+    df_bl['SAA_Status'] = pd.Categorical(df_bl['SAA_Status'], categories=['Negative', 'Positive'], ordered=True)
+    return _encode_binary_columns(df_bl)
+
+
+def _prepare_train_test_split(df_bl):
+    split_df = df_bl[['Original_SUB_ID', 'Group_MIND', 'SAA_Status']].drop_duplicates().copy()
+    split_df = split_df.sort_values('Original_SUB_ID').reset_index(drop=True)
+
+    stratify = split_df['Group_MIND'] if split_df['Group_MIND'].value_counts().min() >= 2 else None
+    try:
+        train_ids, test_ids = train_test_split(
+            split_df['Original_SUB_ID'],
+            test_size=TEST_RATIO,
+            train_size=TRAIN_RATIO,
+            random_state=RANDOM_STATE,
+            stratify=stratify,
+        )
+    except ValueError:
+        train_ids, test_ids = train_test_split(
+            split_df['Original_SUB_ID'],
+            test_size=TEST_RATIO,
+            train_size=TRAIN_RATIO,
+            random_state=RANDOM_STATE,
+            stratify=None,
+        )
+
+    split_df['Split'] = 'train'
+    split_df.loc[split_df['Original_SUB_ID'].isin(test_ids), 'Split'] = 'test'
+
+    os.makedirs(SPLIT_OUTPUT_DIR, exist_ok=True)
+    split_df.to_csv(SPLIT_FILE, index=False, encoding='utf-8-sig')
+    with open(SPLIT_META_FILE, 'w', encoding='utf-8') as f:
+        json.dump(
+            {
+                'data_file': DATA_FILE,
+                'random_state': RANDOM_STATE,
+                'train_ratio': TRAIN_RATIO,
+                'test_ratio': TEST_RATIO,
+                'n_subjects': int(len(split_df)),
+                'n_train': int((split_df['Split'] == 'train').sum()),
+                'n_test': int((split_df['Split'] == 'test').sum()),
+            },
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+    return split_df
 
 
 def _get_delta(df, scale, subjects, endpoint):
-    """计算受试者从 BL 到指定随访点的评分变化量（Δ = followup - BL）。"""
     scale_col = _get_scale_col(df, scale)
-    df[scale_col] = pd.to_numeric(df[scale_col], errors='coerce')
-    df_clean = df[df['Original_SUB_ID'].isin(subjects)].copy()
+    df_work = df.copy()
+    df_work[scale_col] = pd.to_numeric(df_work[scale_col], errors='coerce')
+    df_work = df_work[df_work['Original_SUB_ID'].isin(subjects)].copy()
 
-    bl = df_clean[df_clean['EVENT_ID'] == BL_EVENT][['Original_SUB_ID', scale_col]].copy()
+    bl = df_work[df_work['EVENT_ID'] == BL_EVENT][['Original_SUB_ID', scale_col]].copy()
     bl.columns = ['Original_SUB_ID', 'BL_score']
     bl = bl.drop_duplicates(subset='Original_SUB_ID', keep='first')
 
-    followup = df_clean[df_clean['EVENT_ID'] == endpoint][['Original_SUB_ID', scale_col]].copy()
+    followup = df_work[df_work['EVENT_ID'] == endpoint][['Original_SUB_ID', scale_col]].copy()
     followup.columns = ['Original_SUB_ID', 'FU_score']
     followup = followup.drop_duplicates(subset='Original_SUB_ID', keep='first')
 
@@ -104,219 +209,314 @@ def _get_delta(df, scale, subjects, endpoint):
     return delta[['Original_SUB_ID', 'Delta']]
 
 
-def run_regression():
-    """回归任务：预测 Δ 临床量表（MoCA、UPDRS3）。"""
-    print("\n" + "="*60)
-    print("Step 4a：回归预测 Δ 临床量表（SAA 亚组）")
-    print("="*60)
+def _define_models(df_model):
+    available_cols = set(df_model.columns)
+    demo_cols = [col for col in DEMO_COLS if col in available_cols]
+    clinical_cols = [col for col in _available_clinical_cols(df_model) if col in available_cols]
+    mind_cols = [col for col in MIND_COLS if col in available_cols]
+    saa_cols = ['SAA_Binary'] if 'SAA_Binary' in available_cols else []
 
-    if not os.path.exists(DATA_FILE):
-        print(f"找不到文件: {DATA_FILE}")
-        return
-
-    df_raw = pd.read_csv(DATA_FILE)
-    df_bl = _load_bl_features()
-
-    for scale in ['MoCA', 'UPDRS3']:
-        print(f"\n  >>> 正在处理量表: {scale} ...")
-
-        for endpoint in ML_REGRESSION_ENDPOINTS:
-            event = endpoint['event']
-            label = endpoint['label']
-            suffix = endpoint['suffix']
-
-            delta = _get_delta(df_raw, scale, df_bl['Original_SUB_ID'].unique(), event)
-            if len(delta) < ML_MIN_REGRESSION_N:
-                print(f"    [{suffix}] 有 {event} 数据的受试者不足({len(delta)})，低于阈值 {ML_MIN_REGRESSION_N}，跳过。")
-                continue
-
-            df_merge = pd.merge(df_bl, delta, on='Original_SUB_ID', how='inner')
-            X = df_merge[FEATURE_COLS].dropna()
-            y = df_merge.loc[X.index, 'Delta']
-
-            if len(X) < ML_MIN_REGRESSION_N:
-                print(f"    [{suffix}] 有效建模样本不足({len(X)})，低于阈值 {ML_MIN_REGRESSION_N}，跳过。")
-                continue
-
-            print(f"    [{suffix}] 有效样本: {len(X)} 人 ({label})")
-
-            out_dir = os.path.join(BASE_OUTPUT_DIR, f'Regression_{scale}_{suffix}')
-            os.makedirs(out_dir, exist_ok=True)
-
-            models = {
-                'RandomForest': Pipeline([
-                    ('scaler', StandardScaler()),
-                    ('model', RandomForestRegressor(n_estimators=100, random_state=RANDOM_STATE))
-                ]),
-                'SVR': Pipeline([
-                    ('scaler', StandardScaler()),
-                    ('model', SVR(kernel='rbf', C=1.0))
-                ]),
-                'ElasticNet': Pipeline([
-                    ('scaler', StandardScaler()),
-                    ('model', ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=RANDOM_STATE, max_iter=5000))
-                ]),
-            }
-
-            cv = RepeatedKFold(n_splits=N_SPLITS, n_repeats=N_REPEATS, random_state=RANDOM_STATE)
-            results = []
-
-            for name, pipe in models.items():
-                r2_scores = cross_val_score(pipe, X, y, cv=cv, scoring='r2')
-                neg_mae = cross_val_score(pipe, X, y, cv=cv, scoring='neg_mean_absolute_error')
-                neg_rmse = cross_val_score(pipe, X, y, cv=cv, scoring='neg_root_mean_squared_error')
-
-                results.append({
-                    'Model': name,
-                    'R2_mean': r2_scores.mean(),
-                    'R2_std': r2_scores.std(),
-                    'MAE_mean': -neg_mae.mean(),
-                    'MAE_std': -neg_mae.std(),
-                    'RMSE_mean': -neg_rmse.mean(),
-                    'RMSE_std': -neg_rmse.std(),
-                })
-                print(f"    [{suffix}] {name}: R²={r2_scores.mean():.3f}±{r2_scores.std():.3f}, "
-                      f"MAE={-neg_mae.mean():.3f}")
-
-            res_df = pd.DataFrame(results)
-            res_df.to_csv(os.path.join(out_dir, 'CV_Results.csv'), index=False)
-
-            best_name = res_df.loc[res_df['R2_mean'].idxmax(), 'Model']
-            print(f"    [{suffix}] 最佳模型: {best_name}")
-            best_pipe = models[best_name]
-            best_pipe.fit(X, y)
-
-            perm_imp = permutation_importance(best_pipe, X, y, n_repeats=10, random_state=RANDOM_STATE)
-            imp_df = pd.DataFrame({
-                'Feature': [FEAT_SHORT.get(c, c) for c in FEATURE_COLS],
-                'Importance_mean': perm_imp.importances_mean,
-                'Importance_std': perm_imp.importances_std,
-            }).sort_values('Importance_mean', ascending=True)
-
-            fig, ax = plt.subplots(figsize=(8, 6))
-            ax.barh(imp_df['Feature'], imp_df['Importance_mean'], xerr=imp_df['Importance_std'],
-                    color='#66c2a5', edgecolor='white', linewidth=0.5)
-            ax.set_xlabel('Permutation Importance (R² decrease)', fontsize=FONT_AXIS)
-            ax.set_title(f'Regression: {scale} Δ Prediction\nFeature Importance ({best_name}, {suffix}, 5-fold CV)',
-                         fontsize=FONT_TITLE)
-            ax.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
-            plt.tight_layout()
-            plt.savefig(os.path.join(out_dir, 'Feature_Importance.png'), dpi=DPI)
-            plt.close()
-
-            with open(os.path.join(out_dir, 'Prediction_Summary.txt'), 'w') as f:
-                f.write(f"REGRESSION: Predicting Δ {scale} ({event} - BL)\n")
-                f.write(f"Window: {label}\n")
-                f.write(f"Sample size: {len(X)}\n")
-                f.write(f"Threshold: minimum n = {ML_MIN_REGRESSION_N}\n")
-                f.write(f"CV: {N_SPLITS}-fold, {N_REPEATS} repeats\n\n")
-                for _, row in res_df.iterrows():
-                    f.write(f"{row['Model']}: R²={row['R2_mean']:.3f}±{row['R2_std']:.3f}, "
-                            f"MAE={row['MAE_mean']:.3f}, RMSE={row['RMSE_mean']:.3f}\n")
-                f.write(f"\nBest model: {best_name}\n")
-                f.write(f"\nPermutation Importance:\n")
-                for _, row in imp_df.iterrows():
-                    f.write(f"  {row['Feature']}: {row['Importance_mean']:.4f}±{row['Importance_std']:.4f}\n")
-
-    print(f"\n>>> 回归预测完成！结果存放至: {BASE_OUTPUT_DIR}")
-
-
-def run_classification():
-    """分类任务：预测 SAA+ vs SAA-。"""
-    print("\n" + "="*60)
-    print("Step 4b：分类预测 SAA+ vs SAA-")
-    print("="*60)
-
-    if not os.path.exists(DATA_FILE):
-        print(f"找不到文件: {DATA_FILE}")
-        return
-
-    df_bl = _load_bl_features()
-    X = df_bl[FEATURE_COLS].dropna()
-    y = df_bl.loc[X.index, 'SAA_Status'].map({'Negative': 0, 'Positive': 1})
-
-    print(f"  有效样本: {len(X)} 人 (SAA-: {(y==0).sum()}, SAA+: {(y==1).sum()})")
-
-    out_dir = os.path.join(BASE_OUTPUT_DIR, 'Classification_SAA')
-    os.makedirs(out_dir, exist_ok=True)
-
-    models = {
-        'RandomForest': Pipeline([
-            ('scaler', StandardScaler()),
-            ('model', RandomForestClassifier(n_estimators=100, random_state=RANDOM_STATE))
-        ]),
-        'SVC': Pipeline([
-            ('scaler', StandardScaler()),
-            ('model', SVC(kernel='rbf', C=1.0, probability=True))
-        ]),
-        'LogisticRegression': Pipeline([
-            ('scaler', StandardScaler()),
-            ('model', LogisticRegression(C=1.0, random_state=RANDOM_STATE, max_iter=2000))
-        ]),
+    return {
+        'Model_A_Clinical': demo_cols + clinical_cols,
+        'Model_B_Clinical_SAA': demo_cols + clinical_cols + saa_cols,
+        'Model_C_Clinical_MIND': demo_cols + clinical_cols + mind_cols,
+        'Model_D_Clinical_SAA_MIND': demo_cols + clinical_cols + saa_cols + mind_cols,
     }
 
-    cv = StratifiedKFold(n_splits=N_SPLITS, shuffle=True, random_state=RANDOM_STATE)
-    results = []
 
-    for name, pipe in models.items():
-        acc = cross_val_score(pipe, X, y, cv=cv, scoring='accuracy')
-        f1 = cross_val_score(pipe, X, y, cv=cv, scoring='f1')
-        auc = cross_val_score(pipe, X, y, cv=cv, scoring='roc_auc')
+def _coerce_feature_columns(df, cols):
+    out = df.copy()
+    for col in cols:
+        if col in out.columns:
+            out[col] = pd.to_numeric(out[col], errors='coerce')
+    return out
 
-        results.append({
-            'Model': name,
-            'Accuracy_mean': acc.mean(),
-            'Accuracy_std': acc.std(),
-            'F1_mean': f1.mean(),
-            'F1_std': f1.std(),
-            'AUC_mean': auc.mean(),
-            'AUC_std': auc.std(),
-        })
-        print(f"    {name}: Acc={acc.mean():.3f}±{acc.std():.3f}, "
-              f"F1={f1.mean():.3f}, AUC={auc.mean():.3f}")
 
-    res_df = pd.DataFrame(results)
-    res_df.to_csv(os.path.join(out_dir, 'CV_Results.csv'), index=False)
+def _make_pipeline():
+    return Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler()),
+        ('model', ElasticNet(max_iter=20000, random_state=RANDOM_STATE)),
+    ])
 
-    # 特征重要性（用最佳模型）
-    best_name = res_df.loc[res_df['AUC_mean'].idxmax(), 'Model']
-    print(f"    最佳模型: {best_name}")
-    best_pipe = models[best_name]
-    best_pipe.fit(X, y)
 
-    perm_imp = permutation_importance(best_pipe, X, y, n_repeats=10, random_state=RANDOM_STATE)
+def _fit_and_score_model(train_df, test_df, cols):
+    usable_cols = [col for col in cols if train_df[col].notna().any()]
+    if not usable_cols:
+        return None
+
+    scoring = {
+        'r2': 'r2',
+        'mae': 'neg_mean_absolute_error',
+        'rmse': 'neg_root_mean_squared_error',
+    }
+    cv_splits = min(TRAIN_CV_SPLITS, max(2, len(train_df)))
+    cv = KFold(n_splits=cv_splits, shuffle=True, random_state=RANDOM_STATE)
+
+    grid = GridSearchCV(
+        estimator=_make_pipeline(),
+        param_grid={
+            'model__alpha': np.logspace(-3, 1, 7),
+            'model__l1_ratio': [0.1, 0.3, 0.5, 0.7, 0.9],
+        },
+        scoring=scoring,
+        refit='rmse',
+        cv=cv,
+        n_jobs=-1,
+        return_train_score=False,
+    )
+
+    X_train = train_df[usable_cols]
+    y_train = train_df['Delta']
+    X_test = test_df[usable_cols]
+    y_test = test_df['Delta']
+
+    grid.fit(X_train, y_train)
+
+    best_idx = grid.best_index_
+    cv_results = grid.cv_results_
+    best_params = grid.best_params_
+
+    train_cv_r2 = float(cv_results['mean_test_r2'][best_idx])
+    train_cv_mae = float(-cv_results['mean_test_mae'][best_idx])
+    train_cv_rmse = float(-cv_results['mean_test_rmse'][best_idx])
+
+    best_model = grid.best_estimator_
+    y_pred = best_model.predict(X_test)
+
+    test_r2 = float(r2_score(y_test, y_pred)) if len(test_df) >= 2 else np.nan
+    test_mae = float(mean_absolute_error(y_test, y_pred))
+    test_rmse = float(np.sqrt(mean_squared_error(y_test, y_pred)))
+
+    pred_df = pd.DataFrame({
+        'Original_SUB_ID': test_df['Original_SUB_ID'].values,
+        'Observed_Delta': y_test.values,
+        'Predicted_Delta': y_pred,
+    })
+
+    return {
+        'used_cols': usable_cols,
+        'train_cv_r2': train_cv_r2,
+        'train_cv_mae': train_cv_mae,
+        'train_cv_rmse': train_cv_rmse,
+        'test_r2': test_r2,
+        'test_mae': test_mae,
+        'test_rmse': test_rmse,
+        'best_alpha': float(best_params['model__alpha']),
+        'best_l1_ratio': float(best_params['model__l1_ratio']),
+        'best_estimator': best_model,
+        'predictions': pred_df,
+    }
+
+
+def _build_model_frame(df_bl, split_df, df_raw, scale, endpoint):
+    delta = _get_delta(df_raw, scale, df_bl['Original_SUB_ID'].unique(), endpoint['event'])
+    if delta.empty:
+        return pd.DataFrame()
+
+    df_model = pd.merge(df_bl, delta, on='Original_SUB_ID', how='inner')
+    df_model = pd.merge(df_model, split_df[['Original_SUB_ID', 'Split']], on='Original_SUB_ID', how='inner')
+    df_model = df_model[df_model['Split'].isin(['train', 'test'])].copy()
+
+    feature_sets = _define_models(df_model)
+    used_cols = sorted({col for cols in feature_sets.values() for col in cols})
+    df_model = _coerce_feature_columns(df_model, used_cols + ['Delta'])
+    df_model = df_model.dropna(subset=['Delta']).reset_index(drop=True)
+    return df_model
+
+
+def _write_summary(summary_path, scale, endpoint, df_model, feature_sets, perf_df, best_model_name):
+    train_n = int((df_model['Split'] == 'train').sum())
+    test_n = int((df_model['Split'] == 'test').sum())
+
+    with open(summary_path, 'w', encoding='utf-8') as f:
+        f.write('AIM 3: INCREMENTAL PREDICTIVE VALUE ASSESSMENT\n')
+        f.write('Parkinson-spectrum only; HC excluded.\n')
+        f.write(f'Outcome: {scale} Delta ({endpoint["event"]} - BL)\n')
+        f.write(f'Window: {endpoint["label"]}\n')
+        f.write(f'Sample size: {len(df_model)}\n')
+        f.write(f'Train/Test split: {train_n}/{test_n}\n\n')
+
+        f.write('MODEL DEFINITIONS\n')
+        for model_name in MODEL_ORDER:
+            cols = feature_sets.get(model_name, [])
+            f.write(f'- {model_name}: {", ".join(cols)}\n')
+
+        f.write('\nTRAIN-CV AND TEST RESULTS\n')
+        for _, row in perf_df.iterrows():
+            f.write(
+                f"{row['Model']}: "
+                f"TrainCV R2={row['TrainCV_R2']:.3f}, MAE={row['TrainCV_MAE']:.3f}, RMSE={row['TrainCV_RMSE']:.3f}; "
+                f"Test R2={row['Test_R2']:.3f}, MAE={row['Test_MAE']:.3f}, RMSE={row['Test_RMSE']:.3f}; "
+                f"Delta vs A: dR2={row['Delta_R2_vs_A']:.3f}, dMAE={row['Delta_MAE_vs_A']:.3f}, dRMSE={row['Delta_RMSE_vs_A']:.3f}\n"
+            )
+
+        if best_model_name:
+            f.write(f'\nBest test-RMSE model: {best_model_name}\n')
+
+        f.write('\nUNAVAILABLE AIM 3 MODULES\n')
+        for line in SUMMARY_NOTES:
+            f.write(f'- {line}\n')
+
+
+def _save_feature_importance(best_model, cols, test_df, out_dir, title_suffix):
+    coef = best_model.named_steps['model'].coef_
     imp_df = pd.DataFrame({
-        'Feature': [FEAT_SHORT.get(c, c) for c in FEATURE_COLS],
-        'Importance_mean': perm_imp.importances_mean,
-        'Importance_std': perm_imp.importances_std,
-    }).sort_values('Importance_mean', ascending=True)
-
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.barh(imp_df['Feature'], imp_df['Importance_mean'], xerr=imp_df['Importance_std'],
-            color='#fc8d62', edgecolor='white', linewidth=0.5)
-    ax.set_xlabel('Permutation Importance (AUC decrease)', fontsize=FONT_AXIS)
-    ax.set_title(f'Classification: SAA+ vs SAA-\nFeature Importance ({best_name}, 5-fold CV)',
-                 fontsize=FONT_TITLE)
-    ax.grid(True, linestyle=GRID_LINESTYLE, alpha=ALPHA_GRID)
-    plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'Feature_Importance.png'), dpi=DPI)
-    plt.close()
-
-    with open(os.path.join(out_dir, 'Prediction_Summary.txt'), 'w') as f:
-        f.write(f"CLASSIFICATION: Predicting SAA+ vs SAA-\n")
-        f.write(f"Sample size: {len(X)} (SAA-: {(y==0).sum()}, SAA+: {(y==1).sum()})\n")
-        f.write(f"CV: {N_SPLITS}-fold, stratified\n\n")
-        for _, row in res_df.iterrows():
-            f.write(f"{row['Model']}: Acc={row['Accuracy_mean']:.3f}±{row['Accuracy_std']:.3f}, "
-                    f"F1={row['F1_mean']:.3f}, AUC={row['AUC_mean']:.3f}\n")
-        f.write(f"\nBest model: {best_name}\n")
-        f.write(f"\nPermutation Importance:\n")
-        for _, row in imp_df.iterrows():
-            f.write(f"  {row['Feature']}: {row['Importance_mean']:.4f}±{row['Importance_std']:.4f}\n")
-
-    print(f"\n>>> 分类预测完成！结果存放至: {BASE_OUTPUT_DIR}")
+        'Feature': [FEAT_SHORT.get(col, col) for col in cols],
+        'Coefficient': coef,
+        'Abs_Coefficient': np.abs(coef),
+    }).sort_values('Abs_Coefficient', ascending=False)
+    imp_df.to_csv(os.path.join(out_dir, 'Feature_Coefficients.csv'), index=False)
+    return imp_df
 
 
-if __name__ == "__main__":
-    run_regression()
-    run_classification()
+def run_incremental_prediction():
+    print('\n' + '=' * 60)
+    print('Step 4: Aim 3 incremental prediction value assessment')
+    print('=' * 60)
+
+    df_raw = _load_raw_dataframe()
+    df_bl = _prepare_baseline_table(df_raw)
+
+    if df_bl['Original_SUB_ID'].nunique() < MIN_MODEL_N:
+        print(f'Not enough baseline subjects after HC exclusion: {df_bl["Original_SUB_ID"].nunique()}')
+        return
+
+    split_df = _prepare_train_test_split(df_bl)
+    print(f'Split saved to: {SPLIT_FILE}')
+
+    os.makedirs(BASE_OUTPUT_DIR, exist_ok=True)
+    preview_rows = []
+
+    for scale in TARGET_SCALES:
+        print(f'\n>>> Outcome: {scale}')
+        for endpoint in OUTCOME_WINDOWS:
+            df_model = _build_model_frame(df_bl, split_df, df_raw, scale, endpoint)
+            if df_model.empty:
+                print(f"  [{endpoint['suffix']}] no paired follow-up data, skipped.")
+                continue
+
+            if len(df_model) < MIN_MODEL_N:
+                print(f"  [{endpoint['suffix']}] insufficient paired subjects ({len(df_model)}), skipped.")
+                continue
+
+            train_df = df_model[df_model['Split'] == 'train'].copy()
+            test_df = df_model[df_model['Split'] == 'test'].copy()
+
+            if len(train_df) < 10 or len(test_df) < 5:
+                print(f"  [{endpoint['suffix']}] train/test split too small ({len(train_df)}/{len(test_df)}), skipped.")
+                continue
+
+            feature_sets = _define_models(df_model)
+            used_cols = sorted({col for cols in feature_sets.values() for col in cols})
+            df_model = _coerce_feature_columns(df_model, used_cols + ['Delta'])
+            train_df = df_model[df_model['Split'] == 'train'].copy()
+            test_df = df_model[df_model['Split'] == 'test'].copy()
+
+            print(f"  [{endpoint['suffix']}] usable subjects: {len(df_model)} (train={len(train_df)}, test={len(test_df)})")
+
+            out_dir = os.path.join(BASE_OUTPUT_DIR, scale, endpoint['suffix'])
+            os.makedirs(out_dir, exist_ok=True)
+
+            rows = []
+            test_predictions = pd.DataFrame({
+                'Original_SUB_ID': test_df['Original_SUB_ID'].values,
+                'Split': test_df['Split'].values,
+                'Group_MIND': test_df['Group_MIND'].values,
+                'SAA_Status': test_df['SAA_Status'].astype(str).values,
+                'Observed_Delta': test_df['Delta'].values,
+            })
+
+            model_artifacts = {}
+            for model_name in MODEL_ORDER:
+                cols = feature_sets.get(model_name, [])
+                if not cols:
+                    continue
+
+                result = _fit_and_score_model(train_df, test_df, cols)
+                if result is None:
+                    continue
+                rows.append({
+                    'Model': model_name,
+                    'Features': ', '.join(result['used_cols']),
+                    'n_features': len(result['used_cols']),
+                    'TrainCV_R2': result['train_cv_r2'],
+                    'TrainCV_MAE': result['train_cv_mae'],
+                    'TrainCV_RMSE': result['train_cv_rmse'],
+                    'Test_R2': result['test_r2'],
+                    'Test_MAE': result['test_mae'],
+                    'Test_RMSE': result['test_rmse'],
+                    'Best_Alpha': result['best_alpha'],
+                    'Best_L1_Ratio': result['best_l1_ratio'],
+                })
+                test_predictions[model_name] = result['predictions']['Predicted_Delta'].values
+                model_artifacts[model_name] = {
+                    'estimator': result['best_estimator'],
+                    'cols': result['used_cols'],
+                }
+
+            perf_df = pd.DataFrame(rows)
+            if perf_df.empty:
+                print(f"  [{endpoint['suffix']}] no valid models were fit.")
+                continue
+
+            baseline_row = perf_df.loc[perf_df['Model'] == 'Model_A_Clinical']
+            if not baseline_row.empty:
+                baseline_test_r2 = float(baseline_row.iloc[0]['Test_R2'])
+                baseline_test_mae = float(baseline_row.iloc[0]['Test_MAE'])
+                baseline_test_rmse = float(baseline_row.iloc[0]['Test_RMSE'])
+                perf_df['Delta_R2_vs_A'] = perf_df['Test_R2'] - baseline_test_r2
+                perf_df['Delta_MAE_vs_A'] = perf_df['Test_MAE'] - baseline_test_mae
+                perf_df['Delta_RMSE_vs_A'] = perf_df['Test_RMSE'] - baseline_test_rmse
+            else:
+                perf_df['Delta_R2_vs_A'] = np.nan
+                perf_df['Delta_MAE_vs_A'] = np.nan
+                perf_df['Delta_RMSE_vs_A'] = np.nan
+
+            perf_df = perf_df[ [
+                'Model', 'Features', 'n_features',
+                'TrainCV_R2', 'TrainCV_MAE', 'TrainCV_RMSE',
+                'Test_R2', 'Test_MAE', 'Test_RMSE',
+                'Delta_R2_vs_A', 'Delta_MAE_vs_A', 'Delta_RMSE_vs_A',
+                'Best_Alpha', 'Best_L1_Ratio',
+            ] ]
+            perf_df.to_csv(os.path.join(out_dir, 'Model_Performance.csv'), index=False, encoding='utf-8-sig')
+            test_predictions.to_csv(os.path.join(out_dir, 'Test_Predictions.csv'), index=False, encoding='utf-8-sig')
+
+            best_model_name = perf_df.sort_values('Test_RMSE').iloc[0]['Model']
+            best_artifact = model_artifacts[best_model_name]
+            _save_feature_importance(
+                best_artifact['estimator'],
+                best_artifact['cols'],
+                test_df,
+                out_dir,
+                f'{scale} | {endpoint["suffix"]} | {best_model_name}',
+            )
+
+            _write_summary(
+                os.path.join(out_dir, 'Prediction_Summary.txt'),
+                scale,
+                endpoint,
+                df_model,
+                feature_sets,
+                perf_df,
+                best_model_name,
+            )
+
+            print(f"  [{endpoint['suffix']}] best test-RMSE model: {best_model_name}")
+
+            preview_rows.append({
+                'Scale': scale,
+                'Endpoint': endpoint['suffix'],
+                'Best_Model': best_model_name,
+                'Best_Test_RMSE': float(perf_df.loc[perf_df['Model'] == best_model_name, 'Test_RMSE'].iloc[0]),
+            })
+
+    if preview_rows:
+        pd.DataFrame(preview_rows).to_csv(os.path.join(BASE_OUTPUT_DIR, 'Aim3_Incremental_Overview.csv'), index=False, encoding='utf-8-sig')
+
+    print(f'\n>>> Aim 3 incremental prediction complete. Results saved to: {BASE_OUTPUT_DIR}')
+
+
+if __name__ == '__main__':
+    run_incremental_prediction()

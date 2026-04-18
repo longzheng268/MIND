@@ -218,7 +218,20 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 - [x] `step3f_saa_subgroup_analysis.py`：SAA 亚组敏感性——BL MIND 组间差异（ANCOVA）+ SAA 对临床变化速率的调节（LME）
 - [x] `step3e_lme_nonmotor_extended.py` / `step3f_saa_subgroup_analysis.py`：LME 部分现已支持 `FullTimeline`（BL~V12）与 `2Year`（BL/V04/V06）双时间窗，并复用 config 控制的晚期时间点可视化阈值（2026-04-09）
 
-## 八、仍待确认
+## 九、Aim 3 当前落地策略（Step 4）
+
+- `step4_ml/step4_ml_prediction.py` 当前按 Aim 3 的“增量价值评估”主线重构，不再以 `SAA_Status` 分类本身作为核心任务。
+- 当前优先落地的模块为：
+  - Parkinson-spectrum 样本（默认排除 HC）
+  - 连续主结局：固定时间窗 `UPDRS3` / `MoCA` 变化量
+  - 递进模型：Model A（clinical）/ Model B（clinical+SAA）/ Model C（clinical+MIND）/ Model D（clinical+SAA+MIND）
+  - 次级任务：基于连续恶化幅度定义的 fast-progressor 分类
+- 当前仓库状态下暂未落地的模块：
+  - Model E / F 的 conventional MRI comparator
+  - SAA kinetic 参数模块
+  - phenoconversion / Cox 生存分析
+- 因此 Step 4 的当前目标是先用现有表格变量完成一个可解释、可复现、可发表的 Aim 3 最小可行版本，再随着 conventional MRI / 事件标签补充后继续扩展。
+
 
 - [x] `step3d_baseline_regression.py`：已不再依赖 `MIND_Final_Analysis_Table.csv` 宽表，当前改为直接读取 `./scale/MIND_baseline_with_followup_V04_V12.csv` 长表并动态整理基线/随访回归输入（2026-04-09）
 - [x] `step3d_baseline_regression.py`：当前主输出聚焦 `V10` 与 `V12` 两组图片，并恢复每组 Figure 1 / Figure 2 成对结果（2026-04-09）

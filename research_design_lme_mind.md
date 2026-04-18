@@ -218,19 +218,26 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 - [x] `step3f_saa_subgroup_analysis.py`：SAA 亚组敏感性——BL MIND 组间差异（ANCOVA）+ SAA 对临床变化速率的调节（LME）
 - [x] `step3e_lme_nonmotor_extended.py` / `step3f_saa_subgroup_analysis.py`：LME 部分现已支持 `FullTimeline`（BL~V12）与 `2Year`（BL/V04/V06）双时间窗，并复用 config 控制的晚期时间点可视化阈值（2026-04-09）
 
-## 九、Aim 3 当前落地策略（Step 4）
+## 九、Aim 3 当前落地策略（Step 4, 承接前序分析）
 
-- `step4_ml/step4_ml_prediction.py` 当前按 Aim 3 的“增量价值评估”主线重构，不再以 `SAA_Status` 分类本身作为核心任务。
-- 当前优先落地的模块为：
-  - Parkinson-spectrum 样本（默认排除 HC）
-  - 连续主结局：固定时间窗 `UPDRS3` / `MoCA` 变化量
-  - 递进模型：Model A（clinical）/ Model B（clinical+SAA）/ Model C（clinical+MIND）/ Model D（clinical+SAA+MIND）
-  - 次级任务：基于连续恶化幅度定义的 fast-progressor 分类
+- 当前 Step 4 是整条项目链路中的预测阶段，承接 Step 1-3 的分析结果后再做增量预测价值评估；主运行方案为方案二：
+  - `step4_ml/step4_ml_prediction.py`
+  - Parkinson-spectrum 非 HC 样本
+  - 固定时间窗 `UPDRS3` / `MoCA` 变化量
+  - 递进模型 Model A/B/C/D（预留 E/F）
+  - 7:3 train/test split（subject-level、分层均衡）持久化到 `data/step4_ml/`
+  - 训练集内 CV 与防泄漏预处理，测试集最终评估
+  - test-set ROC/AUC 作为回归主线的二分类补充评估
+- Step 4 目录已规整为“三方案并行”结构：
+  - `step4_ml/plan1_burden_resilience/`（方案一：SAA+ burden-resilience）
+  - `step4_ml/plan2_incremental_prediction/`（方案二：增量预测）
+  - `step4_ml/plan3_topography_mechanism/`（方案三：topography-mechanism）
+- 方案三机制层已接入 AHBA（Allen Human Brain Atlas）叠加实现路径，执行依赖外部数据抓取与缓存完成。
 - 当前仓库状态下暂未落地的模块：
   - Model E / F 的 conventional MRI comparator
   - SAA kinetic 参数模块
   - phenoconversion / Cox 生存分析
-- 因此 Step 4 的当前目标是先用现有表格变量完成一个可解释、可复现、可发表的 Aim 3 最小可行版本，再随着 conventional MRI / 事件标签补充后继续扩展。
+- 图形样式规则：`config.py` 仍为绝对参考，Step 4 所有脚本必须统一通过 `from config import *` 和 `apply_style()` 管理样式，不允许局部覆写。
 
 
 - [x] `step3d_baseline_regression.py`：已不再依赖 `MIND_Final_Analysis_Table.csv` 宽表，当前改为直接读取 `./scale/MIND_baseline_with_followup_V04_V12.csv` 长表并动态整理基线/随访回归输入（2026-04-09）

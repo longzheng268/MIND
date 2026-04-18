@@ -8,8 +8,8 @@
 - `step3d_baseline_regression.py` Aim 3 已加入退化样本保护，V12 非 HC 子样本不足时会自动跳过，避免出现 `R²=1.0000` 假完美结果。
 - `step3d_baseline_regression.py` 绘图风格现已向 Step2/Step3 统一收敛，图幅、字体、grid、stripplot 样式、标题编号均受 `config.py` 监管。
 - `step3d_baseline_regression.py` 现会先保存 PNG，再统一阻塞预览弹窗。
-- `step4_ml/step4_ml_prediction.py` 当前正从简单原型升级为 Aim 3 增量预测价值框架：默认排除 HC，围绕 baseline clinical / SAA / MIND 三个模块比较 Model A/B/C/D，并以 `UPDRS3` / `MoCA` 固定时间窗进展结局为主。
-- `step4_ml/step4_ml_prediction.py` 当前明确标注了 conventional MRI comparator、SAA kinetic 参数与 phenoconversion 事件分析在现有仓库状态下暂不可运行，避免把缺失模块误当成阴性结果。
+- `step4_ml/step4_ml_prediction.py` 是整条项目链路的预测阶段：在 Step 1-3 完成分析基础上，默认排除 HC，围绕 baseline clinical / SAA / MIND 三个模块比较 Model A/B/C/D，并以 `UPDRS3` / `MoCA` 固定时间窗进展结局为主。
+- `step4_ml/step4_ml_prediction.py` 当前明确标注了 conventional MRI comparator、SAA kinetic 参数与 phenoconversion 事件分析在现有仓库状态下暂不可运行，避免把缺失模块误当成阴性结果；这部分仍属于 Step 4 的后续扩展，而不是独立项目。
 - `step3c_lme_multiscale.py` 现已支持 `FullTimeline` 与 `2Year` 双时间窗输出，图标题、xtick、文件命名、阻塞预览和晚期时间点可视化阈值统一受 `config.py` 监管。
 - `step3c_lme_multiscale.py` 当前每个量表目录可同时保留 `FullTimeline` / `2Year` 的 Figure 1、Figure 2、统计摘要与 OLS 保底报告，不再互相覆盖。
 - `step3e_lme_nonmotor_extended.py` 现已支持 `FullTimeline` 与 `2Year` 双时间窗输出，图标题、xtick、文件命名和晚期时间点可视化阈值统一受 `config.py` 监管。
@@ -112,7 +112,7 @@ Step 3 — LME 纵向预测
   step3c_lme_multiscale.py             ← 多量表 LME（独立，现支持 FullTimeline + 2Year）
   step3d_baseline_regression.py        ← 基线回归预测（独立）
 
-Step 4 — ML 预测（留空备用）
+Step 4 — ML 预测（承接前序分析）
 
 工具
   utils_mindshow.py

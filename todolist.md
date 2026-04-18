@@ -1,21 +1,37 @@
 # MIND 分析待办清单
 
-> 更新时间：2026-04-09
+> 更新时间：2026-04-18
 
 ---
 
-## Step 4 — 机器学习预测模型（持续完善）
+## Step 4 — Aim 3 预测阶段（三方案并行，承接前序分析）
+
+- [x] 目录规整：`step4_ml/plan1_burden_resilience/`、`step4_ml/plan2_incremental_prediction/`、`step4_ml/plan3_topography_mechanism/`（2026-04-18）
+- [x] 样式统一规则：Step4 保持 `config.py` 为绝对参考，不允许局部覆写（2026-04-18）
+
+### 方案二（当前主运行）
 
 - [x] `step4_ml/step4_ml_prediction.py`：按 Aim 3 递进模型框架重构主线（clinical / SAA / MIND，2026-04-12）
-- [ ] `step4_ml/step4_ml_prediction.py`：加入显式训练集 / 测试集 7:3 划分与 data 目录持久化
+- [x] `step4_ml/step4_ml_prediction.py`：显式训练集 / 测试集 7:3 划分与 data 目录持久化（subject-level 分层均衡，2026-04-18）
+- [x] `step4_ml/step4_ml_prediction.py`：补充 test-set ROC/AUC 输出（2026-04-18）
+- [x] `MIND_Research_Results/ML_Prediction/Aim3_Incremental/Aim3_ROC_Overview.csv`：汇总全部终点 ROC 结果（2026-04-18）
 - [ ] `step4_ml/step4_ml_prediction.py`：补充 conventional MRI comparator（若数据就绪）
 - [ ] `step4_ml/step4_ml_prediction.py`：补充 SAA kinetic 参数模块（若数据就绪）
 - [ ] `step4_ml/step4_ml_prediction.py`：补充 phenoconversion / Cox 生存分析（若事件标签就绪）
-- [ ] 特征工程：从基线 MIND 矩阵提取节点强度、连边上三角、网络指标
-- [ ] 模型选型：随机森林 / SVR / Elastic Net 回归预测 UPDRS-III 斜率
-- [ ] 交叉验证框架（Leave-One-Out 或 5-fold）
-- [ ] SHAP 特征重要性可视化
-- [ ] 对比基线人口学变量的增量预测力（R² 增益）
+
+### 方案一（SAA+ burden-resilience）
+
+- [ ] burden score：理论驱动复合分数 + PCA-PC1 双版本构建
+- [ ] SAA+ 阶段表达：prodromal/SAA+ vs PD/SAA+ 回归/有序回归
+- [ ] motor/cognitive resilience 残差表型与稳健性验证
+- [ ] burden/resilience 纵向验证与高风险象限分型
+
+### 方案三（SAA+ topography-mechanism）
+
+- [x] SAA+ 个体 MIND 异常拓扑表型构建（global + network topography，2026-04-18）
+- [ ] 域特异纵向验证（motor / cognitive / non-motor）
+- [ ] hub vulnerability 与 disease epicenter 分析
+- [ ] imaging-transcriptomics 与 cell-type enrichment 注释（AHBA 代码路径已接入，待外部数据抓取/缓存完成全量运行）
 
 ---
 

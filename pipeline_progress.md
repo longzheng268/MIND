@@ -110,8 +110,14 @@
   - 基线 SAA+ vs SAA-：Global/Visual/Dorsal/Ventral/Limbic/Frontoparietal/Default 显著，Somatomotor 不显著
   - SAA 亚组 LME：MoCA 与 UPDRS3 的 `Time:MIND_BL` 和 `Time:SAA_Status` 交互当前均未达显著
 - `step4_ml/step4_ml_prediction.py`
-  - 当前正从“预测 SAA 状态”的原型脚本重构为 Aim 3 增量价值评估框架，主线改为比较 baseline clinical、SAA 与 MIND 模块对 `UPDRS3` / `MoCA` 进展结局的递进贡献
-  - 现阶段优先实现 Model A/B/C/D、Parkinson-spectrum 子集分析、固定时间窗连续结局与 fast-progressor 次级分类；conventional MRI、SAA kinetic 与 phenoconversion 因当前仓库缺少可直接建模变量而暂不运行
+  - 当前已作为整个项目的预测阶段主脚本稳定运行（Step 1-3 提供分析基础，Step 4 承接做 Aim 3 增量价值评估）
+  - 采用 Parkinson-spectrum 非 HC 样本、固定时间窗 `UPDRS3`/`MoCA` delta、Model A/B/C/D、7:3 subject-level 分层均衡拆分持久化、train-only CV 与 test-set 终评
+  - 已新增 test-set ROC/AUC 输出（按 train-only 阈值定义 fast-progressor）
+  - 已生成跨终点 ROC 汇总表：`MIND_Research_Results/ML_Prediction/Aim3_Incremental/Aim3_ROC_Overview.csv`
+  - Step4 目录已规整为三方案并行：`plan1_burden_resilience`、`plan2_incremental_prediction`、`plan3_topography_mechanism`
+  - 方案三已接入 AHBA 机制叠加代码路径（`abagen`），当前运行可能受外部数据抓取/缓存时长影响
+  - 方案三核心拓扑输出已生成：`Plan3_Topography_Feature_Contrasts.csv`、`Plan3_Topography_Overview.csv`、`Plan3_Topography_Subject_Scores.csv`
+  - 图形样式管理规则保持不变：`config.py` 为绝对参考，Step4 可视化必须统一 `apply_style()`，不得局部覆写
 
 ---
 

@@ -7,16 +7,39 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import ElasticNet
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, roc_auc_score, roc_curve
 from sklearn.model_selection import GridSearchCV, KFold, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from config import *
+from step4_ml.step4_ml_shared import (
+    BL_EVENT,
+    DEMOGRAPHIC_COLS,
+    MIND_COLS,
+    NON_HC_GROUPS,
+    SAA_POSITIVE_GROUPS,
+    alias_scale_column,
+    available_cols,
+    coerce_numeric,
+    ensure_dir,
+    get_baseline_table,
+    get_saa_positive_table,
+    load_raw_dataframe,
+    make_balanced_subject_split,
+    zscore_frame,
+)
 
-apply_style()
+
+def _enforce_global_plot_style():
+    # Step4 plotting style is globally governed by config.py only.
+    apply_style()
+
+
+_enforce_global_plot_style()
 
 # Aim 3: incremental predictive value in the Parkinson spectrum only.
 # The pipeline uses a fixed 70/30 subject split, trains models only on the
@@ -91,14 +114,7 @@ MODEL_ORDER = [
 
 
 def _get_scale_col(df, scale):
-    aliases = {
-        'MoCA': ['MoCA'],
-        'UPDRS3': ['UPDRS3', 'UPDRSIII', 'UPDRSIII.1'],
-    }
-    for col in aliases.get(scale, [scale]):
-        if col in df.columns:
-            return col
-    raise KeyError(f'Could not find scale column: {scale}')
+    return alias_scale_column(df, scale)
 
 
 def _available_clinical_cols(df):
@@ -115,9 +131,7 @@ def _available_clinical_cols(df):
 
 
 def _load_raw_dataframe():
-    if not os.path.exists(DATA_FILE):
-        raise FileNotFoundError(f'Missing data file: {DATA_FILE}')
-    return pd.read_csv(DATA_FILE)
+    return load_raw_dataframe(DATA_FILE)
 
 
 def _encode_binary_columns(df):
@@ -134,9 +148,7 @@ def _encode_binary_columns(df):
 
 
 def _prepare_baseline_table(df_raw):
-    df_bl = df_raw[df_raw['EVENT_ID'] == BL_EVENT].copy()
-    df_bl = df_bl[df_bl['Group_MIND'] != 'HC'].copy()
-    df_bl = df_bl[df_bl['Group_MIND'].isin(['prodromal_SAA-', 'prodromal_SAA+', 'PD_SAA+'])].copy()
+    df_bl = get_baseline_table(df_raw, groups=NON_HC_GROUPS)
     df_bl = df_bl[df_bl['SAA_Status'].isin(['Negative', 'Positive'])].copy()
     df_bl = df_bl.drop_duplicates(subset='Original_SUB_ID', keep='first').reset_index(drop=True)
     df_bl['SAA_Status'] = pd.Categorical(df_bl['SAA_Status'], categories=['Negative', 'Positive'], ordered=True)
@@ -144,29 +156,12 @@ def _prepare_baseline_table(df_raw):
 
 
 def _prepare_train_test_split(df_bl):
-    split_df = df_bl[['Original_SUB_ID', 'Group_MIND', 'SAA_Status']].drop_duplicates().copy()
-    split_df = split_df.sort_values('Original_SUB_ID').reset_index(drop=True)
-
-    stratify = split_df['Group_MIND'] if split_df['Group_MIND'].value_counts().min() >= 2 else None
-    try:
-        train_ids, test_ids = train_test_split(
-            split_df['Original_SUB_ID'],
-            test_size=TEST_RATIO,
-            train_size=TRAIN_RATIO,
-            random_state=RANDOM_STATE,
-            stratify=stratify,
-        )
-    except ValueError:
-        train_ids, test_ids = train_test_split(
-            split_df['Original_SUB_ID'],
-            test_size=TEST_RATIO,
-            train_size=TRAIN_RATIO,
-            random_state=RANDOM_STATE,
-            stratify=None,
-        )
-
-    split_df['Split'] = 'train'
-    split_df.loc[split_df['Original_SUB_ID'].isin(test_ids), 'Split'] = 'test'
+    split_df = make_balanced_subject_split(
+        df_bl[['Original_SUB_ID', 'Group_MIND', 'SAA_Status']].drop_duplicates().copy(),
+        random_state=RANDOM_STATE,
+        train_ratio=TRAIN_RATIO,
+        test_ratio=TEST_RATIO,
+    )
 
     os.makedirs(SPLIT_OUTPUT_DIR, exist_ok=True)
     split_df.to_csv(SPLIT_FILE, index=False, encoding='utf-8-sig')
@@ -370,6 +365,34 @@ def _save_feature_importance(best_model, cols, test_df, out_dir, title_suffix):
     return imp_df
 
 
+def _make_binary_label(train_delta, test_delta):
+    threshold = float(train_delta.median())
+    train_y = (train_delta >= threshold).astype(int)
+    test_y = (test_delta >= threshold).astype(int)
+    return train_y, test_y, threshold
+
+
+def _save_roc_plot(roc_rows, out_dir, title):
+    if not roc_rows:
+        return None
+
+    fig, ax = plt.subplots(figsize=(7.5, 6), constrained_layout=True)
+    for row in roc_rows:
+        ax.plot(row['FPR'], row['TPR'], linewidth=2.5, label=f"{row['Model']} (AUC={row['AUC']:.3f})")
+    ax.plot([0, 1], [0, 1], color='black', linestyle='--', linewidth=1)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_title(title)
+    ax.legend(frameon=False, fontsize=9)
+    fig_path = os.path.join(out_dir, 'ROC_Curve.png')
+    fig.savefig(fig_path, dpi=300, bbox_inches='tight')
+    plt.show(block=True)
+    plt.close(fig)
+    return fig_path
+
+
 def run_incremental_prediction():
     print('\n' + '=' * 60)
     print('Step 4: Aim 3 incremental prediction value assessment')
@@ -427,6 +450,9 @@ def run_incremental_prediction():
                 'Observed_Delta': test_df['Delta'].values,
             })
 
+            train_binary, test_binary, roc_threshold = _make_binary_label(train_df['Delta'], test_df['Delta'])
+            roc_rows = []
+
             model_artifacts = {}
             for model_name in MODEL_ORDER:
                 cols = feature_sets.get(model_name, [])
@@ -455,6 +481,18 @@ def run_incremental_prediction():
                     'cols': result['used_cols'],
                 }
 
+                try:
+                    auc_value = float(roc_auc_score(test_binary, result['predictions']['Predicted_Delta'].values))
+                    fpr, tpr, _ = roc_curve(test_binary, result['predictions']['Predicted_Delta'].values)
+                    roc_rows.append({
+                        'Model': model_name,
+                        'AUC': auc_value,
+                        'FPR': fpr,
+                        'TPR': tpr,
+                    })
+                except ValueError:
+                    pass
+
             perf_df = pd.DataFrame(rows)
             if perf_df.empty:
                 print(f"  [{endpoint['suffix']}] no valid models were fit.")
@@ -482,6 +520,22 @@ def run_incremental_prediction():
             ] ]
             perf_df.to_csv(os.path.join(out_dir, 'Model_Performance.csv'), index=False, encoding='utf-8-sig')
             test_predictions.to_csv(os.path.join(out_dir, 'Test_Predictions.csv'), index=False, encoding='utf-8-sig')
+
+            roc_summary_rows = []
+            for row in roc_rows:
+                roc_summary_rows.append({'Model': row['Model'], 'AUC': row['AUC'], 'Fast_Progressor_Threshold': roc_threshold})
+            if roc_summary_rows:
+                pd.DataFrame(roc_summary_rows).to_csv(os.path.join(out_dir, 'ROC_Summary.csv'), index=False, encoding='utf-8-sig')
+                best_roc_model = sorted(roc_rows, key=lambda x: x['AUC'], reverse=True)[0]
+                _save_roc_plot(
+                    roc_rows,
+                    out_dir,
+                    f'ROC Curve | {scale} | {endpoint["suffix"]} | threshold={roc_threshold:.3f}',
+                )
+                with open(os.path.join(out_dir, 'ROC_Notes.txt'), 'w', encoding='utf-8') as f:
+                    f.write('ROC analysis uses a train-only median threshold on Delta to define fast-progressor labels.\n')
+                    f.write(f'Threshold: {roc_threshold:.6f}\n')
+                    f.write(f'Best AUC model: {best_roc_model["Model"]} ({best_roc_model["AUC"]:.3f})\n')
 
             best_model_name = perf_df.sort_values('Test_RMSE').iloc[0]['Model']
             best_artifact = model_artifacts[best_model_name]

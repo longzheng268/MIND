@@ -1,13 +1,13 @@
 # MIND Analysis — Progress Tracker
 
-> Last updated: 2026-04-12
+> Last updated: 2026-04-18
 
 ---
 
 ## Overall Pipeline
 
 ```
-Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
+Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (prediction / Aim 3)
  [✓]           [✓]              [✓]            [✓]          [ ]
 ```
 
@@ -180,42 +180,35 @@ Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (TBD)
 
 ---
 
-## Step 4 — ML Prediction Model（Aim 3）
+## Step 4 — ML Prediction Model（Aim 3, downstream of the analysis steps）
 
-**目标**：在 Parkinson 连续谱中，评估 MIND 网络指标在 baseline clinical 和 SAA 之上的增量预测价值。
+**当前状态（2026-04-18）**：Step 4 是整条 MIND 分析链的预测收口阶段，承接 Step 1-3 的统计与纵向分析；当前已规整为三方案并行框架，主运行方案为方案二（增量预测价值评估）。
 
-**推荐方案**（来自研究方案 4.4.13）：
-- 主要结局：24 个月运动进展（UPDRS III 年化变化率）+ 24-36 个月认知进展（MoCA 年化变化率）
-- 主模型：Elastic Net（连续 + 二分类），挑战模型：XGBoost
-- 验证：nested cross-validation（外层 5-fold + 内层 5-fold）+ 独立测试集
-- 模型层级：Model A (clinical) → B (+SAA) → C (+MIND) → D (+SAA+MIND) → E (+传统MRI) → F (全模态)
+**三方案目录**：
+- `step4_ml/plan1_burden_resilience/`：方案一（SAA+ burden-resilience）
+- `step4_ml/plan2_incremental_prediction/`：方案二（incremental predictive value）
+- `step4_ml/plan3_topography_mechanism/`：方案三（SAA+ topography-mechanism）
 
-**当前数据可行性**（2026-03-31）：
+**方案二当前落地要点**：
+- 主脚本：`step4_ml/step4_ml_prediction.py`
+- 人群：Parkinson-spectrum 非 HC
+- 结局：`UPDRS3` / `MoCA` 固定时间窗 delta（V06/V10/V12）
+- 模型：Model A/B/C/D（ElasticNet 主模型）
+- 验证：7:3 train/test split（subject-level、分层均衡、持久化到 `data/step4_ml/`）+ train-only CV + test-set 终评
+- 新增输出：test-set ROC/AUC（`ROC_Curve.png`、`ROC_Summary.csv`、`ROC_Notes.txt`）
+- 汇总输出：`MIND_Research_Results/ML_Prediction/Aim3_Incremental/Aim3_ROC_Overview.csv`
+- 未落地模块：conventional MRI comparator、SAA kinetic、phenoconversion/Cox
 
-| 指标 | 状态 | 说明 |
-|---|---|---|
-| BL+V06 配对 | 44 人 | prodromal_SAA-: 29, prodromal_SAA+: 6, PD_SAA+: 6 |
-| BL+V04 配对 | 41 人 | — |
-| ≥2 时间点 MoCA | 85 人 | prodromal_SAA-: 48, prodromal_SAA+: 9, PD_SAA+: 17 |
-| ≥3 时间点 MoCA | 4 人 | 无法提取 LME slope |
-| SAA kinetic 参数 | ❌ 无 | 仅 SAA_Status（二元） |
-| 传统结构 MRI | ❌ 无 | data/ 仅含 MIND 矩阵，无 TIV/皮层厚度/灰质体积 |
-| MIND 矩阵纵向 | ❌ 仅 BL | V04/V06 的 MIND 指标全缺失 |
-| MIND 网络特征 | 8 维 | 全局 + 7 网络 |
+**方案三当前进展（机制层）**：
+- 已完成方案三核心拓扑产物落盘：`Plan3_Topography_Feature_Contrasts.csv`、`Plan3_Topography_Overview.csv`、`Plan3_Topography_Subject_Scores.csv`。
+- 已接入 `abagen`（Allen Human Brain Atlas）与 Desikan-Killiany atlas 的叠加代码路径；AHBA 当前处于数据抓取/缓存执行阶段。
 
-**可行性评估**：
-- **可做**：Elastic Net / XGBoost 预测 Δ（BL→V06），n=44，11 维特征（8 MIND + 3 人口学）
-- **限制**：样本量极小（n=44），无法做完整 nested CV；SAA 亚组内 n=6，无法做有意义的分组预测
-- **缺失**：Model E/F（传统 MRI 比较）不可行；SAA kinetic 探索不可行；Cox 生存模型不可行（事件数不足）
-- **建议**：当前可先做简化版 Δ 预测 + 特征重要性，待后续数据补充后再扩展完整方案
-
-**当前计划**：
-- [ ] `step4_ml_prediction.py`：简化版 Δ 预测（Elastic Net / XGBoost），仅用现有 11 维特征
-- [ ] 待补充：传统结构 MRI 数据、SAA kinetic 参数、更多纵向配对数据
+**图形样式规则**：
+- `config.py` 仍是绝对参考；Step 4 相关可视化必须统一走 `apply_style()`，禁止局部样式覆写。
 
 | Script | Status | Outputs |
 |---|---|---|
-| `step4_ml/step4_ml_prediction.py` | ✅ 已创建 | SAA 亚组 Δ 预测（回归 + 分类） |
+| `step4_ml/step4_ml_prediction.py` | ✅ Active | 方案二：A/B/C/D 增量预测，train/test + test-set 终评 |
 
 ---
 

@@ -18,20 +18,45 @@
 - [ ] `step4_ml/step4_ml_prediction.py`：补充 conventional MRI comparator（若数据就绪）
 - [ ] `step4_ml/step4_ml_prediction.py`：补充 SAA kinetic 参数模块（若数据就绪）
 - [ ] `step4_ml/step4_ml_prediction.py`：补充 phenoconversion / Cox 生存分析（若事件标签就绪）
+- [ ] `step4_ml/step4_ml_prediction.py`：加入训练折内非线性特征工程（交互项/降维）并评估对增量价值影响
+- [ ] `step4_ml/step4_ml_prediction.py`：加入 XGBoost 挑战模型（Huber/SquaredLog 目标）
 
-### 方案一（SAA+ burden-resilience）
+### 方案一（SAA+ burden-resilience + AHBA 机制注释，Aim 3 主框架）
 
-- [ ] burden score：理论驱动复合分数 + PCA-PC1 双版本构建
-- [ ] SAA+ 阶段表达：prodromal/SAA+ vs PD/SAA+ 回归/有序回归
-- [ ] motor/cognitive resilience 残差表型与稳健性验证
-- [ ] burden/resilience 纵向验证与高风险象限分型
+- [x] burden score：HC 参照 z-score 加权 + PCA-PC1 降级，已输出（2026-04-18）
+- [x] burden score bootstrap 95% CI（2026-04-29）
+- [x] SAA+ 阶段表达：prodromal/SAA+ vs PD/SAA+ 逻辑回归，已输出（2026-04-18）
+- [x] Stage expression forest plot（odds ratios + 95% CI）（2026-04-29）
+- [x] motor/cognitive resilience：studentized residuals + Spearman 单调性检验（2026-04-29）
+- [x] resilience 模型协变量升级为 CLINICAL_COVARS（Age/Sex/Education/LEDD/NHY）（2026-04-29）
+- [x] 纵向验证：MixedLM `Time × Burden + Time × Resilience` + CLINICAL_COVARS（2026-04-29）
+- [x] 高风险象限分型（High/Low Burden × High/Low Resilience）（2026-04-29）
+- [x] Four-quadrant scatter plot 可视化（2026-04-29）
+- [x] PD/SAA- exploratory analysis（section 4.5，Kruskal-Wallis）（2026-04-29）
+- [x] AHBA/PLS 机制注释（空间 null、通路富集、细胞类型注释）（2026-04-29）
+- [x] GO-BP standalone dot plot（2026-04-29）
+- [x] Figures A-E + Supplementary 1-5 代码框架已完成（2026-04-29）
+- [ ] 验证 step4_plan1_burden_resilience.py 在 mind 环境完整运行
+- [ ] burden 非线性变换对比（Quantile / Yeo-Johnson / log1p）与稳定性评估
 
 ### 方案三（SAA+ topography-mechanism）
 
 - [x] SAA+ 个体 MIND 异常拓扑表型构建（global + network topography，2026-04-18）
+- [x] topography contrast 已成功输出 16 行结果（2026-04-18）
 - [ ] 域特异纵向验证（motor / cognitive / non-motor）
 - [ ] hub vulnerability 与 disease epicenter 分析
 - [ ] imaging-transcriptomics 与 cell-type enrichment 注释（AHBA 代码路径已接入，待外部数据抓取/缓存完成全量运行）
+- [ ] AHBA 缓存修复并重跑（当前错误：`unknown archive file format`，见 `AHBA_Fallback_Notes.txt`）
+- [ ] 拓扑特征压缩与相关性升级（tanh + Spearman）
+
+### Step4 统一入口（新增）
+
+- [x] 新增 `step4_ml/step4_entry.py` 统一入口（`--plan {1,2,3,all}`，2026-04-19）
+- [x] 支持 `--mode {quick,full}`、`--skip-ahba`、`--cache-dir`、`--report-only`（2026-04-19）
+- [x] 输出统一运行汇总（`Step4_Entry_Overview.csv`）与运行日志（`Step4_Entry_RunLog.txt`）（2026-04-19）
+- [x] 支持 quick 模式自定义 Plan2 时间窗（`--quick-windows`，2026-04-19）
+- [x] 支持中文自动汇总报告输出（`--summary` -> `Step4_Entry_Summary_CN.md`，2026-04-19）
+- [x] 中文汇总报告支持与上次运行差异对比（Delta：状态/产物标记/耗时，2026-04-19）
 
 ---
 

@@ -19,6 +19,25 @@
 - `config.py` 已新增时间点过滤/映射/刻度辅助函数，Step 3/4 相关脚本正统一切换为受 config 控制。
 - `config.py` 当前统一采用阻塞式显示（`plt.ioff()`），窗口默认收敛为较小预览尺寸。
 
+## 近期状态更新（2026-04-29）
+
+- 运行环境强调：Step4 实际执行统一使用 `conda activate mind`。
+- **方案一已升级为 Aim 3 主框架**（`step4_ml/plan1_burden_resilience/step4_plan1_burden_resilience.py`）：
+  - 五大模块：MIND burden score → stage expression → clinical resilience → longitudinal LME → AHBA/PLS 机制注释
+  - 共享模块：`step4_ml/step4_ml_shared.py`（新增 `CLINICAL_COVARS`、`encode_binary_columns`）
+  - 输出目录：`./MIND_Research_Results/ML_Prediction/Aim3_Plan1_Burden_Resilience/`
+  - AHBA 阶段使用 `abagen` + Desikan-Killiany atlas + PLS + 半球保持置换 spatial null
+  - 产出物：Figures A-E + Supplementary 1-5、PLS gene loadings、pathway/cell-type enrichment
+  - **新增功能**（2026-04-29 补齐）：
+    - Bootstrap 95% CI for burden score
+    - Studentized residuals（替代 raw residuals）+ Spearman 单调性检验
+    - Resilience/longitudinal 模型协变量升级为 CLINICAL_COVARS（Age/Sex/Education/LEDD/NHY）
+    - Four-quadrant scatter plot（High/Low Burden × High/Low Resilience）
+    - Forest plot（stage expression odds ratios）
+    - GO-BP standalone dot plot（pathway enrichment）
+    - PD/SAA- exploratory analysis（section 4.5，Kruskal-Wallis 检验）
+- 方案二（incremental prediction）和方案三（topography）仍保留，但非当前主方向。
+
 ## 背景
 用户按照论文分析流程将所有脚本组织为 Step1-4，Step2 内按分析层级用字母区分，辅助工具文件加 utils_ 前缀。
 

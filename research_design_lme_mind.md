@@ -220,7 +220,17 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 
 ## 九、Aim 3 当前落地策略（Step 4, 承接前序分析）
 
-- 当前 Step 4 是整条项目链路中的预测阶段，承接 Step 1-3 的分析结果后再做增量预测价值评估；主运行方案为方案二：
+- 当前 Step 4 是整条项目链路中的预测阶段，承接 Step 1-3 的分析结果后再做增量预测价值评估；当前主框架为方案一：
+  - `step4_ml/plan1_burden_resilience/step4_plan1_burden_resilience.py`
+  - SAA+ 个体（prodromal_SAA+ / PD_SAA+）的 burden-resilience 框架
+  - 五大模块：burden score → stage expression → clinical resilience → longitudinal LME → AHBA/PLS 机制注释
+  - 协变量：CLINICAL_COVARS = Age_at_Visit, Sex, Education, LEDD_Baseline, NHY
+  - Resilience 使用 studentized residuals + Spearman 单调性检验
+  - Longitudinal 使用 MixedLM `Time × Burden + Time × Resilience` + CLINICAL_COVARS
+  - Bootstrap 95% CI for burden score
+  - PD/SAA- exploratory analysis（section 4.5）
+  - AHBA: PLS + 半球保持置换 spatial null + pathway/cell-type enrichment
+- 方案二仍保留：
   - `step4_ml/step4_ml_prediction.py`
   - Parkinson-spectrum 非 HC 样本
   - 固定时间窗 `UPDRS3` / `MoCA` 变化量
@@ -228,8 +238,8 @@ Benjamini–Hochberg 方法进行 FDR 校正。
   - 7:3 train/test split（subject-level、分层均衡）持久化到 `data/step4_ml/`
   - 训练集内 CV 与防泄漏预处理，测试集最终评估
   - test-set ROC/AUC 作为回归主线的二分类补充评估
-- Step 4 目录已规整为“三方案并行”结构：
-  - `step4_ml/plan1_burden_resilience/`（方案一：SAA+ burden-resilience）
+- Step 4 目录已规整为”三方案并行”结构：
+  - `step4_ml/plan1_burden_resilience/`（方案一：SAA+ burden-resilience，Aim 3 主框架）
   - `step4_ml/plan2_incremental_prediction/`（方案二：增量预测）
   - `step4_ml/plan3_topography_mechanism/`（方案三：topography-mechanism）
 - 方案三机制层已接入 AHBA（Allen Human Brain Atlas）叠加实现路径，执行依赖外部数据抓取与缓存完成。
@@ -245,3 +255,14 @@ Benjamini–Hochberg 方法进行 FDR 校正。
 - [x] `step3d_baseline_regression.py`：Aim 3 已加入退化样本保护；当非 HC 子样本过少时自动跳过，避免 `R²=1.0000` 假完美结果（2026-04-09）
 - [ ] 多量表 FDR 校正（BH 法）：step3c 当前无跨量表 FDR，若论文需要需补充
 - [ ] 事后组间斜率两两比较（emtrends 等价 Python 实现）：当前仅报告 Time:MIND_BL 整体系数
+
+## 十、Step 4 运行维护快照（2026-04-18）
+
+- 本次运行环境：`conda mind`。
+- 方案一（Plan 1）已完成，结果目录：
+  `./MIND_Research_Results/ML_Prediction/Aim3_Plan1_Burden_Resilience/`。
+- 方案二（Plan 2）延续使用主输出目录：
+  `./MIND_Research_Results/ML_Prediction/Aim3_Incremental/`。
+- 方案三（Plan 3）当前状态：
+  - topography 阶段完成并输出 contrasts；
+  - AHBA 阶段因缓存压缩包异常（`unknown archive file format`）失败，机制层待缓存修复后补跑。

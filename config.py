@@ -165,9 +165,18 @@ def apply_style():
         'savefig.dpi':       DPI,
         'savefig.bbox':      'tight',
         'figure.figsize':    (8, 6),
+        'figure.facecolor':  'white',
+        'axes.facecolor':    'white',
         'figure.max_open_warning': 0,
         'axes.spines.top':   False,
         'axes.spines.right': False,
+        'legend.frameon':    False,
+        'axes.labelsize':    FONT_AXIS,
+        'axes.titlesize':    FONT_TITLE,
+        'xtick.labelsize':   FONT_AXIS,
+        'ytick.labelsize':   FONT_AXIS,
+        'grid.linestyle':    GRID_LINESTYLE,
+        'grid.alpha':        ALPHA_GRID,
     })
     plt.ioff()
 

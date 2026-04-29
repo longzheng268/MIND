@@ -35,9 +35,22 @@ _enforce_global_plot_style()
 
 DATA_FILE = './scale/MIND_baseline_with_followup_V04_V12.csv'
 BASE_OUTPUT_DIR = './MIND_Research_Results/ML_Prediction/Aim3_Plan3_Topography_Mechanism/'
-AHBA_ENABLE = os.getenv('STEP4_AHBA_ENABLE', '1') == '1'
+ALLEN_ROOT_DIR = './data/external/allen/'
+ALLEN_ATLAS_DIR = os.path.join(ALLEN_ROOT_DIR, 'atlas')
+ALLEN_EXPRESSION_DIR = os.path.join(ALLEN_ROOT_DIR, 'expression')
+ALLEN_DERIVED_DIR = os.path.join(ALLEN_ROOT_DIR, 'derived')
+ALLEN_CACHE_DIR = os.path.join(ALLEN_ROOT_DIR, 'cache', 'abagen')
+AHBA_ENABLE = os.getenv('STEP4_AHBA_ENABLE', '0') == '1'
 AHBA_GENE_GROUP = os.getenv('STEP4_AHBA_GENE_GROUP', 'brain')
 AHBA_DONORS_ENV = os.getenv('STEP4_AHBA_DONORS', 'all')
+AHBA_CACHE_DIR = os.getenv('STEP4_AHBA_CACHE_DIR', ALLEN_CACHE_DIR)
+PLAN3_PREVIEW_PLOTS = os.getenv('STEP4_PLAN3_PREVIEW', '1') == '1'
+AHBA_LOCAL_EXPRESSION_FILE = os.getenv(
+    'STEP4_AHBA_LOCAL_EXPRESSION',
+    os.path.join(ALLEN_EXPRESSION_DIR, 'AHBA_Brain_Expression.csv'),
+).strip()
+AHBA_FAIL_FAST = os.getenv('STEP4_AHBA_FAIL_FAST', '1') == '1'
+AHBA_MAX_TRIES = max(1, int(os.getenv('STEP4_AHBA_MAX_TRIES', '2')))
 
 
 def _parse_ahba_donors(raw_value):
@@ -48,6 +61,31 @@ def _parse_ahba_donors(raw_value):
     return parts if parts else 'all'
 
 
+def _clear_abagen_cache(cache_dir):
+    if not os.path.isdir(cache_dir):
+        return
+
+    for part_file in Path(cache_dir).rglob('*.part'):
+        try:
+            part_file.unlink()
+        except OSError:
+            pass
+
+    microarray_dir = os.path.join(cache_dir, 'microarray')
+    if os.path.isdir(microarray_dir):
+        shutil.rmtree(microarray_dir, ignore_errors=True)
+
+
+def _ensure_allen_dirs():
+    for folder in [ALLEN_ROOT_DIR, ALLEN_ATLAS_DIR, ALLEN_EXPRESSION_DIR, ALLEN_DERIVED_DIR, os.path.join(ALLEN_ROOT_DIR, 'cache')]:
+        ensure_dir(folder)
+
+
+def _is_cache_corruption_error(message):
+    text = str(message).lower()
+    return 'unknown archive file format' in text or 'uncompress' in text or 'zip' in text
+
+
 def _safe_abagen_expression(atlas, atlas_info, gene_group_name='brain', donors='all'):
     genes = abagen.datasets.fetch_gene_group(gene_group_name)
     gene_set = {gene.upper() for gene in genes}
@@ -55,7 +93,7 @@ def _safe_abagen_expression(atlas, atlas_info, gene_group_name='brain', donors='
         atlas,
         atlas_info=atlas_info,
         donors=donors,
-        data_dir=os.path.join(BASE_OUTPUT_DIR, '.abagen_cache'),
+        data_dir=AHBA_CACHE_DIR,
         return_counts=False,
         return_donors=False,
         verbose=0,
@@ -80,9 +118,64 @@ def _safe_abagen_expression(atlas, atlas_info, gene_group_name='brain', donors='
     return regional_score, genes, expr_df
 
 
+def _prefetch_microarray(donors):
+    # Force non-resume downloads to avoid reusing broken zip fragments.
+    return abagen.datasets.fetch_microarray(
+        data_dir=AHBA_CACHE_DIR,
+        donors=donors,
+        resume=False,
+        verbose=0,
+        convert=True,
+        n_proc=1,
+    )
+
+
+def _load_local_expression_scores(local_file, atlas_info):
+    path = str(local_file).strip()
+    if not path or not os.path.exists(path):
+        return None
+
+    df = pd.read_csv(path)
+    if df.empty:
+        return None
+
+    if 'Regional_Score' in df.columns:
+        score = pd.to_numeric(df['Regional_Score'], errors='coerce')
+    else:
+        numeric_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+        if not numeric_cols:
+            coerced = df.apply(pd.to_numeric, errors='coerce')
+            numeric_cols = [c for c in coerced.columns if coerced[c].notna().any()]
+            df = coerced
+        if not numeric_cols:
+            return None
+        score = df[numeric_cols].mean(axis=1)
+
+    score = pd.Series(score).reset_index(drop=True)
+    atlas_labels = pd.read_csv(atlas_info).sort_values('id').reset_index(drop=True)
+    if len(score) < len(atlas_labels):
+        score = score.reindex(range(len(atlas_labels))).fillna(score.mean())
+    return score
+
+
+def _get_allen_output_paths():
+    _ensure_allen_dirs()
+    return {
+        'root': ALLEN_ROOT_DIR,
+        'atlas': ALLEN_ATLAS_DIR,
+        'expression': ALLEN_EXPRESSION_DIR,
+        'derived': ALLEN_DERIVED_DIR,
+        'cache': AHBA_CACHE_DIR,
+        'local_expression': AHBA_LOCAL_EXPRESSION_FILE,
+    }
+
+
 def _run_ahba_overlay(base_out_dir, gene_group_name='brain'):
     ahba_dir = ensure_dir(os.path.join(base_out_dir, 'AHBA'))
     print(f'[Plan3] AHBA stage started (gene group: {gene_group_name})', flush=True)
+    _ensure_allen_dirs()
+    if AHBA_FAIL_FAST:
+        _clear_abagen_cache(AHBA_CACHE_DIR)
     donor_candidates = []
     env_donors = _parse_ahba_donors(AHBA_DONORS_ENV)
     donor_candidates.append(env_donors)
@@ -96,9 +189,10 @@ def _run_ahba_overlay(base_out_dir, gene_group_name='brain'):
 
     atlas = abagen.datasets.fetch_desikan_killiany(native=False, surface=False)
 
-    for idx, donors in enumerate(donor_candidates, start=1):
+    for idx, donors in enumerate(donor_candidates[:AHBA_MAX_TRIES], start=1):
         try:
             print(f'[Plan3] AHBA try {idx}/{len(donor_candidates)} | donors={donors}', flush=True)
+            _prefetch_microarray(donors)
             regional_score, genes, expr_df = _safe_abagen_expression(
                 atlas['image'],
                 atlas['info'],
@@ -106,22 +200,61 @@ def _run_ahba_overlay(base_out_dir, gene_group_name='brain'):
                 donors=donors,
             )
             expr_df.to_csv(os.path.join(ahba_dir, 'AHBA_Brain_Expression.csv'), index=False, encoding='utf-8-sig')
+            expr_df.to_csv(os.path.join(ALLEN_EXPRESSION_DIR, 'AHBA_Brain_Expression.csv'), index=False, encoding='utf-8-sig')
             pd.DataFrame({
                 'Gene_Group': [gene_group_name],
                 'Gene_Count': [len(genes)],
                 'Donors_Used': [','.join(donors) if isinstance(donors, list) else str(donors)],
                 'Regional_Mean': [float(regional_score.mean())],
             }).to_csv(os.path.join(ahba_dir, 'AHBA_Brain_Summary.csv'), index=False, encoding='utf-8-sig')
+            pd.DataFrame({
+                'Gene_Group': [gene_group_name],
+                'Gene_Count': [len(genes)],
+                'Donors_Used': [','.join(donors) if isinstance(donors, list) else str(donors)],
+                'Regional_Mean': [float(regional_score.mean())],
+            }).to_csv(os.path.join(ALLEN_EXPRESSION_DIR, 'AHBA_Brain_Summary.csv'), index=False, encoding='utf-8-sig')
             ahba_fig_path = _save_ahba_overlay(ahba_dir, regional_score, atlas['image'], atlas['info'], f'{gene_group_name} gene group')
+            _save_ahba_overlay(ALLEN_DERIVED_DIR, regional_score, atlas['image'], atlas['info'], f'{gene_group_name} gene group')
             print(f'[Plan3] AHBA stage complete: {ahba_fig_path}', flush=True)
             return ahba_fig_path
         except Exception as exc:
             errors.append(f'try {idx} donors={donors}: {exc}')
-            # Corrupted partial download is common with remote AHBA fetches; clean microarray cache before retry.
-            microarray_cache = os.path.join(base_out_dir, '.abagen_cache', 'microarray')
-            if os.path.isdir(microarray_cache):
-                shutil.rmtree(microarray_cache, ignore_errors=True)
+            if AHBA_FAIL_FAST and _is_cache_corruption_error(exc):
+                _clear_abagen_cache(AHBA_CACHE_DIR)
+                print('[Plan3] AHBA cache corruption detected; clearing cache and stopping early.', flush=True)
+                break
             print(f'[Plan3] AHBA try {idx} failed: {exc}', flush=True)
+
+    # Fallback 1: reuse existing expression table from previous successful run.
+    existing_expr = os.path.join(ahba_dir, 'AHBA_Brain_Expression.csv')
+    existing_expr_fixed = os.path.join(ALLEN_EXPRESSION_DIR, 'AHBA_Brain_Expression.csv')
+    if os.path.exists(existing_expr) or os.path.exists(existing_expr_fixed):
+        try:
+            expr_df = pd.read_csv(existing_expr if os.path.exists(existing_expr) else existing_expr_fixed)
+            numeric_cols = [c for c in expr_df.columns if pd.api.types.is_numeric_dtype(expr_df[c])]
+            if numeric_cols:
+                regional_score = expr_df[numeric_cols].mean(axis=1)
+                ahba_fig_path = _save_ahba_overlay(ahba_dir, regional_score, atlas['image'], atlas['info'], f'{gene_group_name} gene group (reused)')
+                _save_ahba_overlay(ALLEN_DERIVED_DIR, regional_score, atlas['image'], atlas['info'], f'{gene_group_name} gene group (reused)')
+                print(f'[Plan3] AHBA fallback reuse complete: {ahba_fig_path}', flush=True)
+                return ahba_fig_path
+        except Exception as exc:
+            errors.append(f'fallback reuse failed: {exc}')
+
+    # Fallback 2: load local user-provided expression matrix.
+    local_scores = _load_local_expression_scores(AHBA_LOCAL_EXPRESSION_FILE, atlas['info'])
+    if local_scores is not None:
+        try:
+            ahba_fig_path = _save_ahba_overlay(ahba_dir, local_scores, atlas['image'], atlas['info'], f'{gene_group_name} local expression fallback')
+            _save_ahba_overlay(ALLEN_DERIVED_DIR, local_scores, atlas['image'], atlas['info'], f'{gene_group_name} local expression fallback')
+            with open(os.path.join(ahba_dir, 'AHBA_Local_Fallback_Notes.txt'), 'w', encoding='utf-8') as f:
+                f.write(f'Local expression fallback used: {AHBA_LOCAL_EXPRESSION_FILE}\n')
+            with open(os.path.join(ALLEN_EXPRESSION_DIR, 'AHBA_Local_Fallback_Notes.txt'), 'w', encoding='utf-8') as f:
+                f.write(f'Local expression fallback used: {AHBA_LOCAL_EXPRESSION_FILE}\n')
+            print(f'[Plan3] AHBA local fallback complete: {ahba_fig_path}', flush=True)
+            return ahba_fig_path
+        except Exception as exc:
+            errors.append(f'local fallback failed: {exc}')
 
     try:
         raise RuntimeError('\n'.join(errors) if errors else 'Unknown AHBA failure')
@@ -199,7 +332,8 @@ def _save_feature_plot(contrast_df, out_dir):
     ax.set_title('Plan 3 Topography Contrast')
     fig_path = os.path.join(out_dir, 'Plan3_Topography_Contrast.png')
     fig.savefig(fig_path, dpi=300, bbox_inches='tight')
-    plt.show(block=True)
+    if PLAN3_PREVIEW_PLOTS:
+        plt.show(block=True)
     plt.close(fig)
     return fig_path
 

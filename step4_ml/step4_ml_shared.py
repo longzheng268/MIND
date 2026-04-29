@@ -25,6 +25,7 @@ MIND_COLS = [
 ]
 
 DEMOGRAPHIC_COLS = ['Age_at_Visit', 'Sex', 'Education']
+CLINICAL_COVARS = ['Age_at_Visit', 'Sex', 'Education', 'LEDD_Baseline', 'NHY']
 
 
 def ensure_dir(path):

@@ -1,6 +1,6 @@
 # MIND Pipeline — Session Progress Notes
 
-> 最近更新：2026-04-12
+> 最近更新：2026-04-18
 > 用途：跨会话工作记忆，记录当前代码状态、已完成工作和待办事项
 
 ---
@@ -118,6 +118,55 @@
   - 方案三已接入 AHBA 机制叠加代码路径（`abagen`），当前运行可能受外部数据抓取/缓存时长影响
   - 方案三核心拓扑输出已生成：`Plan3_Topography_Feature_Contrasts.csv`、`Plan3_Topography_Overview.csv`、`Plan3_Topography_Subject_Scores.csv`
   - 图形样式管理规则保持不变：`config.py` 为绝对参考，Step4 可视化必须统一 `apply_style()`，不得局部覆写
+
+## 最新 Step 4 运行摘要（2026-04-18，mind 环境）
+
+- 方案一（`step4_ml/plan1_burden_resilience/step4_plan1_burden_resilience.py`）运行成功，结果已落盘至
+  `./MIND_Research_Results/ML_Prediction/Aim3_Plan1_Burden_Resilience/`。
+  - `Plan1_Burden_Resilience_Summary.csv`：
+    - `UPDRS3`: `N=557`, `Model_R2=0.0202`
+    - `MoCA`: `N=566`, `Model_R2=0.0889`
+
+- 方案二（`step4_ml/step4_ml_prediction.py` / plan2）延续使用
+  `./MIND_Research_Results/ML_Prediction/Aim3_Incremental/`。
+  - `Aim3_Incremental_Overview.csv`：`UPDRS3 V06` 最优模型为 `Model_B_Clinical_SAA`，`MoCA V06` 最优模型为 `Model_D_Clinical_SAA_MIND`。
+
+- 方案三（`step4_ml/plan3_topography_mechanism/step4_plan3_topography_mechanism.py`）
+  - Topography 阶段已成功完成并输出 16 行对比。
+  - AHBA 阶段失败：`AHBA_Fallback_Notes.txt` 记录多次 donor 重试仍报
+    `unknown archive file format`（缓存 zip 异常）。
+  - 当前建议：先报告拓扑结果；机制层结论待 AHBA 缓存修复后补充。
+
+## Step4 Aim 3 框架更新（2026-04-29）
+
+- **核心变化**：方案一（Plan1）已从简单的 burden-resilience 概念验证升级为完整的 Aim 3 实现框架，包含五大模块：
+  1. **MIND burden score**（4.4.1）：HC 参照 z-score 加权合成或 PCA-PC1 降级方案；权重来自 Step2 已有效应量结果；含 bootstrap 95% CI
+  2. **Stage expression**（4.4.2）：prodromal/SAA+ vs PD/SAA+ 逻辑回归，验证 burden 与疾病阶段的关系；含 forest plot 可视化
+  3. **Clinical resilience**（4.4.3）：临床评分 ~ burden + CLINICAL_COVARS（Age/Sex/Education/LEDD/NHY）回归；使用 studentized residuals；含 Spearman 单调性检验
+  4. **Longitudinal validation**（4.4.4）：MixedLM `Time × Burden + Time × Resilience` 交互，协变量包含完整 CLINICAL_COVARS
+  5. **Imaging-transcriptomics**（4.4.5）：AHBA + Desikan-Killiany 对齐 → PLS 回归 → 半球保持置换空间 null → 通路/细胞类型富集；含 standalone GO-BP dot plot
+- **新增产出物**：
+  - Four-quadrant scatter plot（High/Low Burden × High/Low Resilience）
+  - Forest plot（stage expression odds ratios）
+  - GO-BP standalone dot plot（pathway enrichment）
+  - PD/SAA- exploratory analysis（section 4.5，含 Kruskal-Wallis 检验）
+  - Bootstrap 95% CI for burden score
+  - Studentized residuals 替代 raw residuals
+- **产出物总览**：Figures A-E + Supplementary 1-5 + GO-BP dot plot + four-quadrant scatter + forest plot
+- **脚本**：`step4_ml/plan1_burden_resilience/step4_plan1_burden_resilience.py`
+- **共享模块**：`step4_ml/step4_ml_shared.py`（CLINICAL_COVARS、DEMOGRAPHIC_COLS、SAA_BURDEN_COLS、alias_scale_column、coerce_numeric、encode_binary_columns 等）
+- **方案二**（incremental prediction）仍保留但非当前主方向；方案三（topography）为 Plan1 的补充视角
+
+## Step4 优化设计更新（2026-04-19）
+
+- 新增优化文档：`step4_ml/STEP4_Optimization_Activation_DimRed.md`
+- 设计更新要点：
+  - Plan1：非线性变换（Quantile / Yeo-Johnson / log1p）+ 拓扑信息保留
+  - Plan2：降维 + 非线性交互特征 + XGBoost 挑战模型
+  - Plan3：tanh 压缩 + Spearman 空间相关 + AHBA 本地化/替代策略
+- Step4 统一入口（文档设计阶段）：
+  - 计划新增 `step4_ml/step4_entry.py`
+  - 统一参数：`--plan`、`--mode`、`--skip-ahba`、`--report-only`
 
 ---
 

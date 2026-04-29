@@ -210,6 +210,48 @@ Step 1  →  Step 2a/b/c/d  →  Step 2_stats  →  Step 3  →  Step 4 (predict
 |---|---|---|
 | `step4_ml/step4_ml_prediction.py` | ✅ Active | 方案二：A/B/C/D 增量预测，train/test + test-set 终评 |
 
+### 最新运行结果（2026-04-18，mind 环境）
+
+- 方案一（`step4_ml/plan1_burden_resilience/step4_plan1_burden_resilience.py`）已成功完成。
+  - 输出目录：`./MIND_Research_Results/ML_Prediction/Aim3_Plan1_Burden_Resilience/`
+  - `Plan1_Burden_Resilience_Summary.csv` 关键指标：
+    - `UPDRS3`: `N=557`, `Model_R2=0.0202`
+    - `MoCA`: `N=566`, `Model_R2=0.0889`
+  - 当前解读：可解释信号存在，但整体解释度偏弱（MoCA 优于 UPDRS3）。
+  - Plan1 已升级为完整 Aim 3 框架（2026-04-29），包含：
+    - Bootstrap 95% CI for burden score
+    - Studentized residuals（替代 raw residuals）
+    - Spearman 单调性检验（burden vs clinical score）
+    - CLINICAL_COVARS（Age/Sex/Education/LEDD/NHY）用于 resilience 和 longitudinal 模型
+    - Four-quadrant scatter plot（risk phenotype 可视化）
+    - Forest plot（stage expression odds ratios）
+    - GO-BP standalone dot plot（pathway enrichment）
+    - PD/SAA- exploratory analysis（section 4.5）
+
+- 方案二（incremental predictive value）当前结果目录仍为：
+  - `./MIND_Research_Results/ML_Prediction/Aim3_Incremental/`
+  - `Aim3_Incremental_Overview.csv` 显示：
+    - `UPDRS3 V06` 最优 `Model_B_Clinical_SAA`
+    - `MoCA V06` 最优 `Model_D_Clinical_SAA_MIND`
+  - 当前解读：MIND/SAA 增量价值为“局部成立”，非全部终点一致改善。
+
+- 方案三（`step4_ml/plan3_topography_mechanism/step4_plan3_topography_mechanism.py`）
+  - topography 阶段成功：已输出 `Plan3_Topography_Feature_Contrasts.csv`、`Plan3_Topography_Overview.csv` 等文件（16 行对比）。
+  - AHBA 阶段失败：`AHBA_Fallback_Notes.txt` 记录为缓存 zip 解压异常（`unknown archive file format`），涉及 donor 9861/10021/15496 等重试失败。
+  - 当前解读：可报告拓扑差异；机制层（AHBA）暂不具备可报告结果。
+
+### Step4 优化框架（2026-04-19）
+
+- 已新增 Step4 统一优化设计文档：
+  - `step4_ml/STEP4_Optimization_Activation_DimRed.md`
+- 本轮新增方向：
+  - Plan1：非线性变换（Quantile/Yeo-Johnson/log1p）+ 拓扑信息保留
+  - Plan2：降维与二阶交互特征 + XGBoost 挑战模型
+  - Plan3：拓扑压缩（tanh）+ Spearman 关联 + AHBA 本地化 fallback
+- Step4 统一入口（文档方案）：
+  - 建议新增 `step4_ml/step4_entry.py`
+  - 支持 `--plan {1,2,3,all}`、`--mode {quick,full}`、`--skip-ahba`、`--report-only`
+
 ---
 
 ## Utility Files

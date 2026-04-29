@@ -63,6 +63,10 @@ OUTCOME_WINDOWS = [
     {'event': 'V12', 'label': 'Baseline to V12', 'suffix': 'V12'},
 ]
 
+PLAN2_WINDOWS_ENV = os.getenv('STEP4_PLAN2_WINDOWS', '').strip()
+PLAN2_PREVIEW_PLOTS = os.getenv('STEP4_PLAN2_PREVIEW', '1') == '1'
+PLAN2_SAVE_ROC_PLOTS = os.getenv('STEP4_PLAN2_SAVE_ROC_PLOTS', '1') == '1'
+
 TARGET_SCALES = ['UPDRS3', 'MoCA']
 
 MIND_COLS = [
@@ -323,14 +327,26 @@ def _build_model_frame(df_bl, split_df, df_raw, scale, endpoint):
 def _write_summary(summary_path, scale, endpoint, df_model, feature_sets, perf_df, best_model_name):
     train_n = int((df_model['Split'] == 'train').sum())
     test_n = int((df_model['Split'] == 'test').sum())
+    total_n = int(len(df_model))
+
+    if total_n >= 150:
+        reliability = 'high'
+    elif total_n >= 80:
+        reliability = 'moderate'
+    else:
+        reliability = 'low'
 
     with open(summary_path, 'w', encoding='utf-8') as f:
         f.write('AIM 3: INCREMENTAL PREDICTIVE VALUE ASSESSMENT\n')
         f.write('Parkinson-spectrum only; HC excluded.\n')
         f.write(f'Outcome: {scale} Delta ({endpoint["event"]} - BL)\n')
         f.write(f'Window: {endpoint["label"]}\n')
-        f.write(f'Sample size: {len(df_model)}\n')
+        f.write(f'Sample size: {total_n}\n')
         f.write(f'Train/Test split: {train_n}/{test_n}\n\n')
+        f.write(f'Reliability label: {reliability}\n')
+        if reliability == 'low':
+            f.write('Caution: low sample size window; interpret incremental differences conservatively.\n')
+        f.write('\n')
 
         f.write('MODEL DEFINITIONS\n')
         for model_name in MODEL_ORDER:
@@ -376,6 +392,9 @@ def _save_roc_plot(roc_rows, out_dir, title):
     if not roc_rows:
         return None
 
+    if not PLAN2_SAVE_ROC_PLOTS:
+        return None
+
     fig, ax = plt.subplots(figsize=(7.5, 6), constrained_layout=True)
     for row in roc_rows:
         ax.plot(row['FPR'], row['TPR'], linewidth=2.5, label=f"{row['Model']} (AUC={row['AUC']:.3f})")
@@ -388,9 +407,19 @@ def _save_roc_plot(roc_rows, out_dir, title):
     ax.legend(frameon=False, fontsize=9)
     fig_path = os.path.join(out_dir, 'ROC_Curve.png')
     fig.savefig(fig_path, dpi=300, bbox_inches='tight')
-    plt.show(block=True)
+    if PLAN2_PREVIEW_PLOTS:
+        plt.show(block=True)
     plt.close(fig)
     return fig_path
+
+
+def _selected_outcome_windows():
+    if not PLAN2_WINDOWS_ENV:
+        return OUTCOME_WINDOWS
+
+    selected = {x.strip().upper() for x in PLAN2_WINDOWS_ENV.split(',') if x.strip()}
+    filtered = [w for w in OUTCOME_WINDOWS if w['suffix'].upper() in selected or w['event'].upper() in selected]
+    return filtered if filtered else OUTCOME_WINDOWS
 
 
 def run_incremental_prediction():
@@ -411,9 +440,12 @@ def run_incremental_prediction():
     os.makedirs(BASE_OUTPUT_DIR, exist_ok=True)
     preview_rows = []
 
+    selected_windows = _selected_outcome_windows()
+    print('Step4 Plan2 windows:', ', '.join([w['suffix'] for w in selected_windows]))
+
     for scale in TARGET_SCALES:
         print(f'\n>>> Outcome: {scale}')
-        for endpoint in OUTCOME_WINDOWS:
+        for endpoint in selected_windows:
             df_model = _build_model_frame(df_bl, split_df, df_raw, scale, endpoint)
             if df_model.empty:
                 print(f"  [{endpoint['suffix']}] no paired follow-up data, skipped.")
@@ -562,6 +594,10 @@ def run_incremental_prediction():
             preview_rows.append({
                 'Scale': scale,
                 'Endpoint': endpoint['suffix'],
+                'N': int(len(df_model)),
+                'Train_N': int(len(train_df)),
+                'Test_N': int(len(test_df)),
+                'Reliability': 'high' if len(df_model) >= 150 else ('moderate' if len(df_model) >= 80 else 'low'),
                 'Best_Model': best_model_name,
                 'Best_Test_RMSE': float(perf_df.loc[perf_df['Model'] == best_model_name, 'Test_RMSE'].iloc[0]),
             })
